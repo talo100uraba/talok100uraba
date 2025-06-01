@@ -309,16 +309,14 @@
     <input type="text" id="colores" placeholder="Colores (ej: Rojo, Verde, Negro)" />
     <input type="number" id="precio" placeholder="Precio en pesos" required />
     <input type="text" id="promo" placeholder="Promoción (ej: 10% OFF, opcional)" />
-    <input type="text" id="imagenesUrls" placeholder="URLs de imágenes (separadas por comas)" />
+    <input type="file" id="imagenes" accept="image/*" multiple />
     <button type="submit" id="submitBtn">Añadir al catálogo</button>
   </form>
 
   <!-- ========================================
        Grilla de productos (se inyecta con JS)
        ======================================== -->
-  <div class="productos-grid" id="productosGrid">
-    <!-- Aquí el JavaScript creará cada <div class="producto"> -->
-  </div>
+  <div class="productos-grid" id="productos"></div>
 
   <!-- Botón ir al carrito -->
   <a href="carrito.html" class="ir-al-carrito">🛒 Ir al carrito</a>
@@ -330,145 +328,92 @@
   </footer>
 
   <!-- =================================================================
-       SCRIPT: Renderizado de productos + CRUD + Modo Admin usando Fetch
+       SCRIPT: Reemplazo de IndexedDB por fetch al backend + CRUD + Modo Admin
        ================================================================= -->
   <script>
-    // URL base de tu servidor en Render
     const BACKEND_URL = "https://taloadmin-backend.onrender.com";
 
+    // Función para mostrar/ocultar el menú hamburguesa
+    function toggleMenu() {
+      document.getElementById("menu").classList.toggle("show");
+    }
+    window.toggleMenu = toggleMenu;
+
+    // Referencias a elementos
+    const btnAdmin = document.getElementById('modoAdminBtn');
+    const form = document.getElementById('formProducto');
+    const productosDiv = document.getElementById('productos');
+    const formTitulo = form.querySelector('h3');
+    const submitBtn = document.getElementById('submitBtn');
+    const inputImagenes = document.getElementById('imagenes');
+
+    // Variable para almacenar el producto en edición
+    let currentEditarProducto = null;
+
+    // Al cargar la página:
     document.addEventListener('DOMContentLoaded', () => {
       cargarYRenderizarProductos();
 
-      // Si ya existe token Admin válido, mostrar la interfaz Admin
       if (tieneTokenValido()) {
         habilitarModoAdminInterfaz();
       }
-
-      // Listener para abrir/cerrar menú hamburguesa
-      window.toggleMenu = () => {
-        document.getElementById("menu").classList.toggle("show");
-      };
-
-      // Listener para el botón Modo Admin
-      document.getElementById('modoAdminBtn').addEventListener('click', () => {
-        if (!tieneTokenValido()) {
-          alert("🚫 Debes iniciar sesión como Admin.");
-          return;
-        }
-        const form = document.getElementById('formProducto');
-        if (form.style.display === 'block') {
-          form.style.display = 'none';
-        } else {
-          abrirFormularioParaAgregar();
-          form.style.display = 'block';
-        }
-      });
-
-      // Listener para el formulario de Crear/Editar
-      document.getElementById('formProducto').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!tieneTokenValido()) {
-          alert("🚫 Debes iniciar sesión como Admin para guardar cambios.");
-          return;
-        }
-
-        const prodId = document.getElementById('productoId').value;
-        const nombre = document.getElementById('nombre').value.trim();
-        const descripcion = document.getElementById('descripcion').value.trim();
-        const tallas = document.getElementById('tallas').value.trim();
-        const colores = document.getElementById('colores').value.trim();
-        const precio = parseFloat(document.getElementById('precio').value);
-        const promo = document.getElementById('promo').value.trim();
-        const imagenesRaw = document.getElementById('imagenesUrls').value.trim();
-        const imagenesArray = imagenesRaw
-          ? imagenesRaw.split(',').map(u => u.trim()).filter(u => u !== "")
-          : [];
-
-        if (!nombre || isNaN(precio)) {
-          alert("Nombre y precio son obligatorios.");
-          return;
-        }
-
-        try {
-          const token = localStorage.getItem('admin_jwt');
-          let url = `${BACKEND_URL}/api/products`;
-          let method = 'POST';
-
-          if (prodId) {
-            // Editar
-            url = `${BACKEND_URL}/api/products/${prodId}`;
-            method = 'PUT';
-          }
-
-          const resp = await fetch(url, {
-            method,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              nombre,
-              descripcion,
-              tallas,
-              colores,
-              precio,
-              promo,
-              imagenes: imagenesArray
-            })
-          });
-
-          const data = await resp.json();
-          if (!resp.ok) {
-            throw new Error(data.error || 'Error al guardar producto.');
-          }
-
-          alert(prodId ? "✅ Producto actualizado correctamente." : "✅ Producto agregado correctamente.");
-          document.getElementById('formProducto').reset();
-          document.getElementById('formProducto').style.display = 'none';
-          cargarYRenderizarProductos();
-        } catch (err) {
-          console.error(err);
-          alert("❌ " + err.message);
-        }
-      });
     });
 
-    // 1) Cargar y renderizar todos los productos desde el backend
+    // ---------------------------------------------------------------
+    // 1) Cargar productos desde backend y renderizar solo “camisas”
+    // ---------------------------------------------------------------
     async function cargarYRenderizarProductos() {
       try {
         const resp = await fetch(`${BACKEND_URL}/api/products`);
-        const productos = await resp.json();
-        const grid = document.getElementById('productosGrid');
-        grid.innerHTML = '';
+        if (!resp.ok) {
+          throw new Error('Error al obtener productos del servidor');
+        }
+        const productos = await resp.json(); // Array de productos
 
-        productos.forEach(prod => {
+        // Filtrar solo la categoría "camisas"
+        const misProductos = productos.filter(p => p.categoria === 'camisas');
+
+        productosDiv.innerHTML = ''; // Limpiar grilla
+
+        misProductos.forEach(prod => {
+          const id = prod.id || prod._id;
+
+          // Calcular precio y descuento
+          const tieneDescuento = prod.promo && !isNaN(parseInt(prod.promo));
+          const descuento = tieneDescuento ? parseInt(prod.promo) : 0;
+          const precioOriginal = prod.precio;
+          const precioFinal = tieneDescuento
+            ? Math.round(precioOriginal * (1 - descuento / 100))
+            : precioOriginal;
+
+          // Crear tarjeta de producto
           const div = document.createElement('div');
           div.className = 'producto';
 
-          // Botón Eliminar (✖), visible solo en modo Admin
+          // Botón Eliminar (✖)
           const btnDel = document.createElement('button');
-          btnDel.className = 'btn-eliminar';
+          btnDel.className = 'btn-eliminar hidden';
           btnDel.setAttribute('data-admin', 'solo');
-          btnDel.innerText = '✖';
+          btnDel.innerHTML = '✖';
           btnDel.title = "Eliminar producto";
-          btnDel.onclick = () => eliminarProducto(prod._id);
+          btnDel.onclick = () => eliminarProducto(id);
           div.appendChild(btnDel);
 
-          // Botón Editar (✎), visible solo en modo Admin
+          // Botón Editar (✎)
           const btnEd = document.createElement('button');
-          btnEd.className = 'btn-editar';
+          btnEd.className = 'btn-editar hidden';
           btnEd.setAttribute('data-admin', 'solo');
-          btnEd.innerText = '✎';
+          btnEd.innerHTML = '✎';
           btnEd.title = "Editar producto";
           btnEd.onclick = () => abrirFormularioParaEditar(prod);
           div.appendChild(btnEd);
 
           // Imagen clickeable a detalle.html
           const enlace = document.createElement('a');
-          enlace.href = `detalle.html?categoria=camisas&id=${prod._id}`;
+          enlace.href = `detalle.html?categoria=camisas&id=${id}`;
           enlace.target = '_blank';
           const img = document.createElement('img');
-          img.src = (prod.imagenes && prod.imagenes.length > 0) ? prod.imagenes[0] : 'placeholder.jpg';
+          img.src = (prod.imagenes && prod.imagenes[0]) || '';
           img.alt = prod.nombre;
           enlace.appendChild(img);
           div.appendChild(enlace);
@@ -486,13 +431,6 @@
           }
 
           // Precio y descuento
-          const tieneDescuento = prod.promo && !isNaN(parseInt(prod.promo));
-          const descuento = tieneDescuento ? parseInt(prod.promo) : 0;
-          const precioOriginal = prod.precio;
-          const precioFinal = tieneDescuento
-            ? Math.round(precioOriginal * (1 - descuento / 100))
-            : precioOriginal;
-
           const pPrecio = document.createElement('p');
           pPrecio.innerHTML = `<span style="font-size: 1.1rem; font-weight: bold;">$${precioFinal.toLocaleString()}</span>`;
           if (tieneDescuento) {
@@ -501,7 +439,7 @@
                 $${precioOriginal.toLocaleString()}
               </span>
               <span style="background: #000; color: #fff; padding: 2px 6px; font-size: 0.85rem; margin-left: 6px;">
-                -${descuento}%  
+                -${descuento}%
               </span>`;
           }
           div.appendChild(pPrecio);
@@ -515,10 +453,12 @@
           palette.className = 'color-palette';
 
           if (prod.colores && prod.colores.trim() !== "") {
+            // Separamos la cadena por comas, quitamos espacios y a minúsculas
             const arrayDeColores = prod.colores
               .split(',')
               .map(c => c.trim().toLowerCase());
 
+            // Diccionario español → CSS
             const diccionarioColores = {
               rojo: "red",
               verde: "green",
@@ -538,16 +478,24 @@
             arrayDeColores.forEach(colorNombre => {
               const circle = document.createElement('span');
               circle.className = 'color-circle';
+
+              // 1) Si está en el diccionario, lo usamos:
               if (diccionarioColores[colorNombre]) {
                 circle.style.backgroundColor = diccionarioColores[colorNombre];
-              } else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorNombre)) {
+              }
+              // 2) Si es código hex válido (#FFF o #AABBCC), lo usamos:
+              else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorNombre)) {
                 circle.style.backgroundColor = colorNombre;
-              } else {
+              }
+              // 3) Si no se reconoce, lo dejamos blanco
+              else {
                 circle.style.backgroundColor = "#fff";
               }
+
               palette.appendChild(circle);
             });
           } else {
+            // Si no hay colores, un círculo blanco genérico
             const circle = document.createElement('span');
             circle.className = 'color-circle';
             circle.style.backgroundColor = "#fff";
@@ -561,76 +509,247 @@
           const btnCar = document.createElement('button');
           btnCar.className = 'btn-carrito';
           btnCar.textContent = 'Añadir al carrito';
-          btnCar.onclick = () => irADetalle(prod._id);
+          btnCar.onclick = () => irADetalle(id);
           div.appendChild(btnCar);
 
-          grid.appendChild(div);
+          productosDiv.appendChild(div);
         });
 
-        // Si estamos en modo Admin, mostramos elementos data-admin="solo"
+        // Si estamos en modo Admin, mostrar elementos data-admin="solo"
         if (tieneTokenValido()) {
           habilitarModoAdminInterfaz();
         }
       } catch (err) {
-        console.error('Error cargando productos:', err);
-        alert('No se pudieron cargar los productos desde el servidor.');
+        console.error('Error cargando productos desde backend:', err);
+        alert('No se pudieron cargar los productos.');
       }
     }
 
-    // 2) Abrir la página de detalle para “Añadir al carrito”
-    function irADetalle(id) {
+    // Ir a la página de detalle
+    window.irADetalle = function(id) {
       const url = `detalle.html?categoria=camisas&id=${id}`;
       window.open(url, "_blank");
-    }
+    };
 
-    // 3) Eliminar producto (solo Admin)
-    async function eliminarProducto(id) {
-      if (!tieneTokenValido()) return;
+    // ---------------------------------------------------------------
+    // 2) Eliminar producto (solo Admin, vía DELETE)
+    // ---------------------------------------------------------------
+    window.eliminarProducto = async function(id) {
+      if (!tieneTokenValido()) return alert("Solo Admin puede eliminar.");
       if (!confirm("¿Seguro que deseas eliminar este producto?")) return;
 
       try {
         const token = localStorage.getItem('admin_jwt');
         const resp = await fetch(`${BACKEND_URL}/api/products/${id}`, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
-        const data = await resp.json();
-        if (!resp.ok) {
-          throw new Error(data.error || 'Error al eliminar');
-        }
+        if (!resp.ok) throw new Error('Error al eliminar');
         cargarYRenderizarProductos();
       } catch (err) {
-        console.error('Error al eliminar producto:', err);
+        console.error('Error eliminando producto:', err);
         alert('No se pudo eliminar el producto.');
       }
+    };
+
+    // ---------------------------------------------------------------
+    // 3) Abrir formulario para editar (no requiere petición adicional)
+    // ---------------------------------------------------------------
+    function abrirFormularioParaEditar(producto) {
+      if (!tieneTokenValido()) return alert("Solo Admin puede editar.");
+
+      currentEditarProducto = producto; // Guardamos producto original
+      formTitulo.textContent = "Editar producto";
+      submitBtn.textContent = "Guardar cambios";
+      document.getElementById('productoId').value = producto.id || producto._id;
+      document.getElementById('nombre').value = producto.nombre;
+      document.getElementById('descripcion').value = producto.descripcion || "";
+      document.getElementById('tallas').value = producto.tallas || "";
+      document.getElementById('colores').value = producto.colores || "";
+      document.getElementById('precio').value = producto.precio;
+      document.getElementById('promo').value = producto.promo || "";
+      inputImagenes.required = false; // no forzamos cambiar imagen en edición
+      form.style.display = 'block';
     }
 
-    // 4) Cargar producto en el formulario para editar (solo Admin)
-    function abrirFormularioParaEditar(prod) {
-      if (!tieneTokenValido()) return;
-      document.getElementById('productoId').value = prod._id;
-      document.getElementById('nombre').value = prod.nombre;
-      document.getElementById('descripcion').value = prod.descripcion || "";
-      document.getElementById('tallas').value = prod.tallas || "";
-      document.getElementById('colores').value = prod.colores || "";
-      document.getElementById('precio').value = prod.precio;
-      document.getElementById('promo').value = prod.promo || "";
-      document.getElementById('imagenesUrls').value = (prod.imagenes || []).join(', ');
-      document.getElementById('formProducto').querySelector('h3').textContent = "Editar producto";
-      document.getElementById('submitBtn').textContent = "Guardar cambios";
-      document.getElementById('formProducto').style.display = 'block';
-    }
+    // ---------------------------------------------------------------
+    // 4) Manejo del formulario (submit): alta o edición via POST/PUT
+    // ---------------------------------------------------------------
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-    // 5) Mostrar elementos de Admin cuando hay token válido
+      if (!tieneTokenValido()) {
+        alert("🚫 Debes iniciar sesión como Admin para guardar cambios.");
+        return;
+      }
+
+      const idEdicion = document.getElementById('productoId').value;
+      let imagenesArray = [];
+      const archivos = inputImagenes.files;
+
+      if (!idEdicion) {
+        // -------- MODO CREAR NUEVO: requerimos al menos 1 imagen --------
+        if (!archivos || archivos.length === 0) {
+          alert("Debes seleccionar al menos una imagen.");
+          return;
+        }
+        // Convertir archivos a Base64
+        try {
+          const promesas = Array.from(archivos).map(file => {
+            return new Promise((resolve, reject) => {
+              if (!file.type.startsWith("image/")) {
+                reject(new Error(`"${file.name}" no es una imagen.`));
+                return;
+              }
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = (err) => reject(new Error(`Error al leer "${file.name}": ${err}`));
+              reader.readAsDataURL(file);
+            });
+          });
+
+          const resultados = await Promise.allSettled(promesas);
+          imagenesArray = resultados
+            .filter(r => r.status === "fulfilled")
+            .map(r => r.value);
+
+          if (imagenesArray.length === 0) {
+            alert("No se pudo procesar ninguna imagen válida.");
+            return;
+          }
+        } catch (err) {
+          console.error("Error al procesar imágenes:", err);
+          alert("Error inesperado al procesar las imágenes.");
+          return;
+        }
+      } else {
+        // -------- MODO EDICIÓN --------
+        // Si suben nuevas imágenes, las convertimos; si no, usamos las originales
+        if (archivos && archivos.length > 0) {
+          try {
+            const promesas = Array.from(archivos).map(file => {
+              return new Promise((resolve, reject) => {
+                if (!file.type.startsWith("image/")) {
+                  reject(new Error(`"${file.name}" no es una imagen.`));
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = (err) => reject(new Error(`Error al leer "${file.name}": ${err}`));
+                reader.readAsDataURL(file);
+              });
+            });
+
+            const resultados = await Promise.allSettled(promesas);
+            const nuevas = resultados
+              .filter(r => r.status === "fulfilled")
+              .map(r => r.value);
+
+            imagenesArray = nuevas.length > 0
+              ? nuevas
+              : currentEditarProducto.imagenes;
+          } catch (err) {
+            console.error("Error al procesar imágenes en edición:", err);
+            alert("Error inesperado al procesar las imágenes.");
+            return;
+          }
+        } else {
+          imagenesArray = currentEditarProducto.imagenes;
+        }
+      }
+
+      // Leer los demás campos
+      const nombre = document.getElementById('nombre').value.trim();
+      const descripcion = document.getElementById('descripcion').value.trim();
+      const tallas = document.getElementById('tallas').value.trim();
+      const colores = document.getElementById('colores').value.trim();
+      const precio = parseInt(document.getElementById('precio').value);
+      const promo = document.getElementById('promo').value.trim();
+
+      if (!nombre || isNaN(precio)) {
+        alert("Nombre y precio son obligatorios.");
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('admin_jwt');
+        let url = `${BACKEND_URL}/api/products`;
+        let opts = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            nombre,
+            descripcion,
+            tallas,
+            colores,
+            precio,
+            promo,
+            imagenes: imagenesArray,
+            categoria: 'camisas'
+          })
+        };
+
+        if (idEdicion) {
+          // Si trae “productoId” hacemos PUT
+          url = `${BACKEND_URL}/api/products/${idEdicion}`;
+          opts.method = 'PUT';
+        }
+
+        const resp = await fetch(url, opts);
+        const data = await resp.json();
+        if (!resp.ok) {
+          throw new Error(data.error || 'Error al guardar producto');
+        }
+
+        alert('✅ Producto guardado correctamente');
+        form.reset();
+        form.style.display = 'none';
+        currentEditarProducto = null;
+        cargarYRenderizarProductos();
+      } catch (err) {
+        console.error('Error guardando producto:', err);
+        alert('❌ No se pudo guardar el producto: ' + err.message);
+      }
+    });
+
+    // ---------------------------------------------------------------
+    // 5) Función que muestra elementos data-admin="solo"
+    // ---------------------------------------------------------------
     function habilitarModoAdminInterfaz() {
-      document.getElementById('modoAdminBtn').style.display = 'block';
-      document.getElementById('formProducto').style.display = 'none';
+      document.getElementById('modoAdminBtn').classList.remove('hidden');
       document.querySelectorAll("[data-admin='solo']").forEach(el => {
-        el.style.display = '';
+        el.classList.remove("hidden");
       });
     }
+  </script>
 
-    // 6) Funciones de Autenticación con JWT
+  <!-- ============================================================
+       SCRIPT Modo Admin: login a /login con JWT + edición inline
+       ============================================================ -->
+  <script>
+    // URL base de tu servidor
+    const BACKEND_URL = "https://taloadmin-backend.onrender.com";
+
+    // Al presionar Ctrl+Shift+A, mostramos prompt y hacemos fetch a /login
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!('ontouchstart' in window)) {
+        window.addEventListener('keydown', async (e) => {
+          if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+            e.preventDefault();
+            await iniciarSesionAdmin();
+          }
+        });
+      }
+      // Si ya existe token válido, activamos Modo Admin
+      if (tieneTokenValido()) {
+        habilitarModoAdmin();
+      }
+    });
 
     // Mostrar prompt y llamar a /login para obtener JWT
     async function iniciarSesionAdmin() {
@@ -645,19 +764,19 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
-        if (resp.ok) {
+        if (resp.status === 200) {
           const data = await resp.json();
           const token = data.token;
           localStorage.setItem('admin_jwt', token);
           alert("✔️ Sesión Admin iniciada correctamente.");
+          habilitarModoAdmin();
           habilitarModoAdminInterfaz();
-          cargarYRenderizarProductos();
         } else {
           const err = await resp.json();
           alert(`❌ ${err.error || 'Credenciales inválidas.'}`);
         }
       } catch (error) {
-        console.error("Error al contactar con backend:", error);
+        console.error("Error al conectar con backend:", error);
         alert("⚠️ Error al contactar al servidor de autenticación.");
       }
     }
@@ -676,24 +795,105 @@
       }
     }
 
-    // Habilita los eventos para detectar Ctrl+Shift+A y continuar con login
-    window.addEventListener('keydown', async (e) => {
-      if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-        e.preventDefault();
-        await iniciarSesionAdmin();
+    // Habilita todos los elementos con data-admin="solo" y hace editable
+    function habilitarModoAdmin() {
+      document.body.classList.add("admin-activo");
+      document.querySelectorAll("[data-admin='solo']").forEach(el => {
+        el.classList.remove("hidden");
+      });
+
+      // Hacer editable todo <h1>, <h2>, <h3>, <h4>, <p>
+      document.querySelectorAll("h1, h2, h3, h4, p").forEach(el => {
+        el.contentEditable = true;
+        el.style.cursor = "text";
+      });
+
+      // Agregar icono de edición + input file a cada imagen
+      document.querySelectorAll("img").forEach(img => {
+        const parent = img.parentElement;
+        if (getComputedStyle(parent).position === "static") {
+          parent.style.position = "relative";
+        }
+        const icono = document.createElement("div");
+        icono.innerText = "✎";
+        icono.style.position = "absolute";
+        icono.style.top = "8px";
+        icono.style.right = "8px";
+        icono.style.background = "rgba(0,0,0,0.6)";
+        icono.style.color = "#fff";
+        icono.style.padding = "2px 5px";
+        icono.style.borderRadius = "4px";
+        icono.style.cursor = "pointer";
+        icono.style.zIndex = "10";
+        icono.style.fontSize = "16px";
+        icono.style.userSelect = "none";
+        parent.appendChild(icono);
+
+        const inputFile = document.createElement("input");
+        inputFile.type = "file";
+        inputFile.accept = "image/*";
+        inputFile.style.display = "none";
+        parent.appendChild(inputFile);
+
+        icono.addEventListener("click", (e) => {
+          e.stopPropagation();
+          inputFile.click();
+        });
+        inputFile.addEventListener("change", (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function(ev) {
+            img.src = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+          inputFile.value = "";
+        });
+
+        img.style.transition = "outline .2s";
+        img.addEventListener("mouseenter", () => {
+          img.style.outline = "2px dashed orange";
+        });
+        img.addEventListener("mouseleave", () => {
+          img.style.outline = "none";
+        });
+      });
+
+      // Banner “Modo Admin Activo”
+      if (!document.getElementById("bannerAdmin")) {
+        const banner = document.createElement("div");
+        banner.id = "bannerAdmin";
+        banner.innerHTML = "🔒 Modo Admin Activo";
+        banner.style.position = "fixed";
+        banner.style.bottom = "10px";
+        banner.style.right = "10px";
+        banner.style.background = "#000";
+        banner.style.color = "#fff";
+        banner.style.padding = "8px 12px";
+        banner.style.zIndex = "2000";
+        banner.style.borderRadius = "4px";
+        document.body.appendChild(banner);
       }
-    });
+    }
 
     // (Opcional) Cerrar sesión Admin: borra token y oculta elementos
     function cerrarSesionAdmin() {
       localStorage.removeItem('admin_jwt');
-      document.getElementById('modoAdminBtn').style.display = 'none';
-      document.getElementById('formProducto').style.display = 'none';
+      document.body.classList.remove("admin-activo");
       document.querySelectorAll("[data-admin='solo']").forEach(el => {
-        el.style.display = 'none';
+        el.classList.add("hidden");
       });
+      document.querySelectorAll("h1, h2, h3, h4, p").forEach(el => {
+        el.contentEditable = false;
+        el.style.cursor = "auto";
+      });
+      document.querySelectorAll("img").forEach(img => {
+        img.style.outline = "none";
+        img.replaceWith(img.cloneNode(true));
+      });
+      const banner = document.getElementById("bannerAdmin");
+      if (banner) banner.remove();
       alert("🔒 Sesión Admin cerrada.");
-      cargarYRenderizarProductos();
     }
   </script>
 </body>

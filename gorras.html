@@ -2,24 +2,21 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shorts - TALØ</title>
-
-  <!-- Hoja de estilos global -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gorras - TALØ</title>
   <link rel="stylesheet" href="estilos_animaciones.css" />
-
   <style>
-    /* ===================================================
-       Estilos específicos para shorts.html
-       =================================================== */
+    /* ================================
+       Ajustes de diseño para gorras.html
+       ================================ */
 
+    /* Reservar espacio para el header fijo */
     body {
-      padding-top: 80px; /* Deja espacio para el header fijo */
+      padding-top: 80px; /* Ajusta si el header cambia de altura */
       margin: 0;
       font-family: Arial, sans-serif;
       background-color: #f5f5f5;
       color: #000;
-      box-sizing: border-box;
     }
 
     /* ------------ HEADER -------------- */
@@ -35,9 +32,11 @@
       align-items: center;
       justify-content: center; /* Centra logo + título */
       z-index: 100;
-      padding: 0 20px;
       box-sizing: border-box;
+      padding: 0 20px;
     }
+
+    /* Botón hamburguesa: en el extremo izquierdo */
     .menu-toggle {
       position: absolute;
       left: 20px;
@@ -48,25 +47,29 @@
       cursor: pointer;
       z-index: 110;
     }
+
+    /* Logo + título centrados */
     #logo {
       display: flex;
       align-items: center;
       gap: 10px;
     }
     #logo img {
-      width: 70px;
-      height: 70px;
+      width: 70px;   /* más grande */
+      height: 70px;  /* más grande */
     }
     #logo h1 {
-      font-size: 2.5rem;
+      font-size: 2.5rem; /* más grande */
       margin: 0;
     }
+
+    /* Menú desplegable: aparece justo debajo del header, alineado con el botón */
     .menu-links {
       display: none;
       flex-direction: column;
       position: absolute;
-      top: 60px;   /* Debajo del header */
-      left: 20px;  /* Alineado con el ícono hamburguesa */
+      top: 60px; /* justo debajo del header */
+      left: 20px; /* alineado con el icono hamburguesa */
       background-color: #000;
       border: 1px solid #fff;
       padding: 10px;
@@ -88,7 +91,7 @@
     }
     /* ---------------------------------- */
 
-    /* GRID DE PRODUCTOS */
+    /* Grid de productos */
     .productos-grid {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
@@ -98,6 +101,7 @@
       margin: 0 auto;
       box-sizing: border-box;
     }
+
     .producto {
       background-color: #fff;
       border: 1px solid #000;
@@ -128,7 +132,7 @@
       text-align: center;
     }
 
-    /* Botones Eliminar / Editar (solo en modo Admin) */
+    /* Botones Eliminar / Editar (ocultos inicialmente) */
     .btn-eliminar,
     .btn-editar {
       position: absolute;
@@ -137,7 +141,7 @@
       border: none;
       font-size: 1.2rem;
       cursor: pointer;
-      display: none; /* Se mostrarán solo en modo Admin */
+      display: none; /* Solo en modo Admin */
     }
     .btn-eliminar {
       right: 8px;
@@ -148,7 +152,7 @@
       color: #00c;
     }
 
-    /* Paleta de colores dinámica (círculos pequeños) */
+    /* Paleta de colores dinámica */
     .color-palette {
       display: flex;
       justify-content: center;
@@ -191,7 +195,7 @@
       border-radius: 3px;
     }
 
-    /* Formulario Admin (creación/edición de producto) */
+    /* Formulario Admin */
     .admin-form {
       display: none; /* invisible por defecto */
       margin: 0 auto 30px auto;
@@ -224,9 +228,9 @@
       border-radius: 3px;
     }
 
-    /* Botón “Modo Admin” */
+    /* Botón Modo Admin */
     #modoAdminBtn {
-      display: none; /* Solo se muestra si hay token Admin válido */
+      display: none; /* aparece solo con token válido */
       margin: 20px auto;
       padding: 10px 25px;
       font-size: 1rem;
@@ -252,7 +256,7 @@
       font-size: 0.95rem;
     }
 
-    /* Responsive para 2 columnas en pantallas pequeñas */
+    /* Responsive */
     @media screen and (max-width: 768px) {
       .productos-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -263,14 +267,19 @@
 
 <body>
   <!-- ==============================
-       HEADER: logo + título + hamburguesa
+       HEADER: LOGO + TÍTULO + HAMBURGUESA
        ============================== -->
   <header>
+    <!-- Botón hamburguesa a la izquierda -->
     <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+
+    <!-- Logo + título centrado -->
     <div id="logo">
       <img src="imagenes/talo.png" alt="Logo Talø" />
-      <h1>SHORTS</h1>
+      <h1>TALØ</h1>
     </div>
+
+    <!-- Menú desplegable -->
     <nav id="menu" class="menu-links">
       <a href="index.html">Inicio</a>
       <a href="camisas.html">Camisas</a>
@@ -287,28 +296,27 @@
   <button id="modoAdminBtn" class="hidden" data-admin="solo">Modo Admin</button>
 
   <!-- ==============================
-       Formulario de alta/edición (solo Admin)
+       Formulario de Alta/Edición
+       (se muestra solo en modo Admin)
        ============================== -->
   <form class="admin-form hidden" id="formProducto" data-admin="solo">
-    <h3>Agregar nuevo producto (Shorts)</h3>
-    <!-- En edición guardará aquí el id; si está vacío, se interpreta como “nuevo” -->
-    <input type="hidden" id="productoId" value="" />
+    <h3>Agregar nuevo producto</h3>
+    <input type="hidden" id="productoId" value="">
     <input type="text" id="nombre" placeholder="Nombre del producto" required />
     <input type="text" id="descripcion" placeholder="Descripción del producto" />
     <input type="text" id="tallas" placeholder="Tallas (ej: S, M, L)" />
     <input type="text" id="colores" placeholder="Colores (ej: Rojo, Verde, Negro)" />
     <input type="number" id="precio" placeholder="Precio en pesos" required />
     <input type="text" id="promo" placeholder="Promoción (ej: 10% OFF, opcional)" />
-    <!-- Ahora solicitamos URLs de imágenes separados por comas -->
-    <input type="text" id="imagenesUrls" placeholder="URLs de imágenes (separadas por comas)" />
+    <input type="file" id="imagenes" accept="image/*" multiple />
     <button type="submit" id="submitBtn">Añadir al catálogo</button>
   </form>
 
   <!-- ========================================
-       Grilla de productos (Shorts) – inyectada con JavaScript
+       Grilla de productos (se inyecta con JS)
        ======================================== -->
-  <div class="productos-grid" id="productosGrid">
-    <!-- Aquí el JS creará cada <div class="producto"> para “shorts” -->
+  <div class="productos-grid" id="productos">
+    <!-- Aquí el JavaScript creará cada <div class="producto"> -->
   </div>
 
   <!-- Botón ir al carrito -->
@@ -321,27 +329,26 @@
   </footer>
 
   <!-- =================================================================
-       SCRIPT: Renderizado de productos + CRUD + Modo Admin usando Fetch
+       SCRIPT: Fetch al backend (Gorras) + CRUD + Modo Admin
        ================================================================= -->
   <script>
-    // URL base de tu servidor en Render
     const BACKEND_URL = "https://taloadmin-backend.onrender.com";
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Cargar y mostrar todos los shorts desde el backend
+      // 1) Cargar y renderizar todos los gorras
       cargarYRenderizarProductos();
 
-      // Mostrar interfaz Admin si hay token válido
+      // 2) Si ya existe token Admin válido, mostrar interfaz Admin
       if (tieneTokenValido()) {
         habilitarModoAdminInterfaz();
       }
 
-      // Mostrar/ocultar menú hamburguesa
+      // 3) Mostrar/ocultar menú hamburguesa
       window.toggleMenu = () => {
         document.getElementById("menu").classList.toggle("show");
       };
 
-      // Botón Modo Admin
+      // 4) Al hacer clic en “Modo Admin”
       document.getElementById('modoAdminBtn').addEventListener('click', () => {
         if (!tieneTokenValido()) {
           alert("🚫 Debes iniciar sesión como Admin.");
@@ -356,7 +363,7 @@
         }
       });
 
-      // Manejo del formulario de Crear/Editar
+      // 5) Manejo del formulario de Crear/Editar
       document.getElementById('formProducto').addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!tieneTokenValido()) {
@@ -369,12 +376,46 @@
         const descripcion = document.getElementById('descripcion').value.trim();
         const tallas = document.getElementById('tallas').value.trim();
         const colores = document.getElementById('colores').value.trim();
-        const precio = parseFloat(document.getElementById('precio').value);
+        const precio = parseInt(document.getElementById('precio').value);
         const promo = document.getElementById('promo').value.trim();
-        const imagenesRaw = document.getElementById('imagenesUrls').value.trim();
-        const imagenesArray = imagenesRaw
-          ? imagenesRaw.split(',').map(u => u.trim()).filter(u => u !== "")
-          : [];
+
+        // Convertir archivos a Base64 si hay nuevos
+        let imagenesArray = [];
+        const archivos = document.getElementById('imagenes').files;
+        if (!prodId) {
+          // Crear nuevo requiere al menos 1 imagen
+          if (!archivos || archivos.length === 0) {
+            alert("Debes seleccionar al menos una imagen.");
+            return;
+          }
+        }
+        if (archivos && archivos.length > 0) {
+          try {
+            const promesas = Array.from(archivos).map(file => {
+              return new Promise((resolve, reject) => {
+                if (!file.type.startsWith("image/")) {
+                  reject(new Error(`"${file.name}" no es una imagen.`));
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = (err) => reject(new Error(`Error al leer "${file.name}": ${err}`));
+                reader.readAsDataURL(file);
+              });
+            });
+            const resultados = await Promise.allSettled(promesas);
+            const exitosos = resultados.filter(r => r.status === "fulfilled").map(r => r.value);
+            if (exitosos.length === 0 && !prodId) {
+              alert("No se pudo procesar ninguna imagen válida.");
+              return;
+            }
+            imagenesArray = exitosos;
+          } catch (err) {
+            console.error("Error al procesar imágenes:", err);
+            alert("Error inesperado al procesar las imágenes.");
+            return;
+          }
+        }
 
         if (!nombre || isNaN(precio)) {
           alert("Nombre y precio son obligatorios.");
@@ -387,7 +428,6 @@
           let method = 'POST';
 
           if (prodId) {
-            // Editar producto existente
             url = `${BACKEND_URL}/api/products/${prodId}`;
             method = 'PUT';
           }
@@ -406,7 +446,7 @@
               precio,
               promo,
               imagenes: imagenesArray,
-              categoria: 'shorts' // aseguramos la categoría
+              categoria: 'gorras'
             })
           });
 
@@ -428,17 +468,17 @@
       });
     });
 
-    // 1) Cargar y renderizar todos los productos “shorts” desde el backend
+    // 6) Cargar y renderizar todos los productos “gorras” desde el backend
     async function cargarYRenderizarProductos() {
       try {
         const resp = await fetch(`${BACKEND_URL}/api/products`);
         const productos = await resp.json();
-        const grid = document.getElementById('productosGrid');
+        const grid = document.getElementById('productos');
         grid.innerHTML = '';
 
         productos.forEach(prod => {
-          // Solo mostrar aquellos cuya categoría sea "shorts"
-          if (prod.categoria !== 'shorts') return;
+          // Solo mostrar los de categoría "gorras"
+          if (prod.categoria !== 'gorras') return;
 
           const div = document.createElement('div');
           div.className = 'producto';
@@ -463,12 +503,12 @@
 
           // Imagen clickeable a detalle.html
           const enlace = document.createElement('a');
-          enlace.href = `detalle.html?categoria=shorts&id=${prod._id}`;
+          enlace.href = `detalle.html?categoria=gorras&id=${prod._id}`;
           enlace.target = '_blank';
           const img = document.createElement('img');
           img.src = (prod.imagenes && prod.imagenes.length > 0) 
             ? prod.imagenes[0] 
-            : 'placeholder.jpg';
+            : '';
           img.alt = prod.nombre;
           enlace.appendChild(img);
           div.appendChild(enlace);
@@ -501,7 +541,8 @@
                 $${precioOriginal.toLocaleString()}
               </span>
               <span style="background: #000; color: #fff; padding: 2px 6px; font-size: 0.85rem; margin-left: 6px;">
-                -${descuento}%</span>`;
+                -${descuento}%
+              </span>`;
           }
           div.appendChild(pPrecio);
 
@@ -576,13 +617,13 @@
       }
     }
 
-    // 2) Abrir la página de detalle para “Añadir al carrito”
+    // 7) Abrir la página de detalle para “Añadir al carrito”
     function irADetalle(id) {
-      const url = `detalle.html?categoria=shorts&id=${id}`;
+      const url = `detalle.html?categoria=gorras&id=${id}`;
       window.open(url, "_blank");
     }
 
-    // 3) Eliminar producto (solo Admin)
+    // 8) Eliminar producto (solo Admin)
     async function eliminarProducto(id) {
       if (!tieneTokenValido()) return;
       if (!confirm("¿Seguro que deseas eliminar este producto?")) return;
@@ -604,7 +645,7 @@
       }
     }
 
-    // 4) Cargar producto en el formulario para editar (solo Admin)
+    // 9) Abrir formulario para editar (solo Admin)
     function abrirFormularioParaEditar(prod) {
       if (!tieneTokenValido()) return;
       document.getElementById('productoId').value = prod._id;
@@ -614,13 +655,12 @@
       document.getElementById('colores').value = prod.colores || "";
       document.getElementById('precio').value = prod.precio;
       document.getElementById('promo').value = prod.promo || "";
-      document.getElementById('imagenesUrls').value = (prod.imagenes || []).join(', ');
-      document.getElementById('formProducto').querySelector('h3').textContent = "Editar producto (Shorts)";
+      document.getElementById('formProducto').querySelector('h3').textContent = "Editar producto";
       document.getElementById('submitBtn').textContent = "Guardar cambios";
       document.getElementById('formProducto').style.display = 'block';
     }
 
-    // 5) Mostrar elementos de Admin cuando hay token válido
+    // 10) Mostrar elementos de Admin cuando hay token válido
     function habilitarModoAdminInterfaz() {
       document.getElementById('modoAdminBtn').style.display = 'block';
       document.getElementById('formProducto').style.display = 'none';
@@ -629,7 +669,7 @@
       });
     }
 
-    // 6) Funciones de Autenticación con JWT
+    // 11) Funciones de Autenticación con JWT
 
     // Mostrar prompt y llamar a /login para obtener JWT
     async function iniciarSesionAdmin() {
@@ -675,7 +715,7 @@
       }
     }
 
-    // Habilita los eventos para detectar Ctrl+Shift+A y continuar con login
+    // Detectar Ctrl+Shift+A para iniciar sesión Admin
     window.addEventListener('keydown', async (e) => {
       if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
         e.preventDefault();

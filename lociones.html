@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shorts - TALØ</title>
+  <title>Lociones - TALØ</title>
 
-  <!-- Hoja de estilos global -->
+  <!-- Hoja de estilos global (contiene estilos comunes para todas las secciones) -->
   <link rel="stylesheet" href="estilos_animaciones.css" />
-
   <style>
     /* ===================================================
-       Estilos específicos para shorts.html
+       Estilos específicos para lociones.html (idénticos a camisas, shorts, gorras, etc.)
        =================================================== */
 
     body {
@@ -266,11 +265,16 @@
        HEADER: logo + título + hamburguesa
        ============================== -->
   <header>
+    <!-- Botón hamburguesa a la izquierda -->
     <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+
+    <!-- Logo + título centrados -->
     <div id="logo">
       <img src="imagenes/talo.png" alt="Logo Talø" />
-      <h1>SHORTS</h1>
+      <h1>LOCIONES</h1>
     </div>
+
+    <!-- Menú desplegable -->
     <nav id="menu" class="menu-links">
       <a href="index.html">Inicio</a>
       <a href="camisas.html">Camisas</a>
@@ -290,7 +294,7 @@
        Formulario de alta/edición (solo Admin)
        ============================== -->
   <form class="admin-form hidden" id="formProducto" data-admin="solo">
-    <h3>Agregar nuevo producto (Shorts)</h3>
+    <h3>Agregar nuevo producto (Lociones)</h3>
     <!-- En edición guardará aquí el id; si está vacío, se interpreta como “nuevo” -->
     <input type="hidden" id="productoId" value="" />
     <input type="text" id="nombre" placeholder="Nombre del producto" required />
@@ -299,16 +303,15 @@
     <input type="text" id="colores" placeholder="Colores (ej: Rojo, Verde, Negro)" />
     <input type="number" id="precio" placeholder="Precio en pesos" required />
     <input type="text" id="promo" placeholder="Promoción (ej: 10% OFF, opcional)" />
-    <!-- Ahora solicitamos URLs de imágenes separados por comas -->
-    <input type="text" id="imagenesUrls" placeholder="URLs de imágenes (separadas por comas)" />
+    <input type="file" id="imagenes" accept="image/*" multiple />
     <button type="submit" id="submitBtn">Añadir al catálogo</button>
   </form>
 
   <!-- ========================================
-       Grilla de productos (Shorts) – inyectada con JavaScript
+       Grilla de productos (Lociones) – se inyecta con JavaScript
        ======================================== -->
-  <div class="productos-grid" id="productosGrid">
-    <!-- Aquí el JS creará cada <div class="producto"> para “shorts” -->
+  <div class="productos-grid" id="productos">
+    <!-- Aquí el JS creará cada <div class="producto"> para “lociones” -->
   </div>
 
   <!-- Botón ir al carrito -->
@@ -321,27 +324,26 @@
   </footer>
 
   <!-- =================================================================
-       SCRIPT: Renderizado de productos + CRUD + Modo Admin usando Fetch
+       SCRIPT: Fetch al backend (Lociones) + CRUD + Modo Admin
        ================================================================= -->
   <script>
-    // URL base de tu servidor en Render
     const BACKEND_URL = "https://taloadmin-backend.onrender.com";
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Cargar y mostrar todos los shorts desde el backend
+      // 1) Cargar y renderizar todos los lociones
       cargarYRenderizarProductos();
 
-      // Mostrar interfaz Admin si hay token válido
+      // 2) Si ya existe token Admin válido, mostrar interfaz Admin
       if (tieneTokenValido()) {
         habilitarModoAdminInterfaz();
       }
 
-      // Mostrar/ocultar menú hamburguesa
+      // 3) Mostrar/ocultar menú hamburguesa
       window.toggleMenu = () => {
         document.getElementById("menu").classList.toggle("show");
       };
 
-      // Botón Modo Admin
+      // 4) Al hacer clic en “Modo Admin”
       document.getElementById('modoAdminBtn').addEventListener('click', () => {
         if (!tieneTokenValido()) {
           alert("🚫 Debes iniciar sesión como Admin.");
@@ -356,7 +358,7 @@
         }
       });
 
-      // Manejo del formulario de Crear/Editar
+      // 5) Manejo del formulario de Crear/Editar
       document.getElementById('formProducto').addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!tieneTokenValido()) {
@@ -369,12 +371,46 @@
         const descripcion = document.getElementById('descripcion').value.trim();
         const tallas = document.getElementById('tallas').value.trim();
         const colores = document.getElementById('colores').value.trim();
-        const precio = parseFloat(document.getElementById('precio').value);
+        const precio = parseInt(document.getElementById('precio').value);
         const promo = document.getElementById('promo').value.trim();
-        const imagenesRaw = document.getElementById('imagenesUrls').value.trim();
-        const imagenesArray = imagenesRaw
-          ? imagenesRaw.split(',').map(u => u.trim()).filter(u => u !== "")
-          : [];
+
+        // Convertir archivos a Base64 si hay nuevos
+        let imagenesArray = [];
+        const archivos = document.getElementById('imagenes').files;
+        if (!prodId) {
+          // Crear nuevo requiere al menos 1 imagen
+          if (!archivos || archivos.length === 0) {
+            alert("Debes seleccionar al menos una imagen.");
+            return;
+          }
+        }
+        if (archivos && archivos.length > 0) {
+          try {
+            const promesas = Array.from(archivos).map(file => {
+              return new Promise((resolve, reject) => {
+                if (!file.type.startsWith("image/")) {
+                  reject(new Error(`"${file.name}" no es una imagen.`));
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = (err) => reject(new Error(`Error al leer "${file.name}": ${err}`));
+                reader.readAsDataURL(file);
+              });
+            });
+            const resultados = await Promise.allSettled(promesas);
+            const exitosos = resultados.filter(r => r.status === "fulfilled").map(r => r.value);
+            if (exitosos.length === 0 && !prodId) {
+              alert("No se pudo procesar ninguna imagen válida.");
+              return;
+            }
+            imagenesArray = exitosos;
+          } catch (err) {
+            console.error("Error al procesar imágenes:", err);
+            alert("Error inesperado al procesar las imágenes.");
+            return;
+          }
+        }
 
         if (!nombre || isNaN(precio)) {
           alert("Nombre y precio son obligatorios.");
@@ -387,7 +423,6 @@
           let method = 'POST';
 
           if (prodId) {
-            // Editar producto existente
             url = `${BACKEND_URL}/api/products/${prodId}`;
             method = 'PUT';
           }
@@ -406,7 +441,7 @@
               precio,
               promo,
               imagenes: imagenesArray,
-              categoria: 'shorts' // aseguramos la categoría
+              categoria: 'lociones'
             })
           });
 
@@ -428,17 +463,26 @@
       });
     });
 
-    // 1) Cargar y renderizar todos los productos “shorts” desde el backend
+    // Función para abrir el formulario en modo “Agregar”
+    function abrirFormularioParaAgregar() {
+      document.getElementById('formProducto').querySelector('h3').textContent = "Agregar nuevo producto (Lociones)";
+      document.getElementById('submitBtn').textContent = "Añadir al catálogo";
+      document.getElementById('productoId').value = "";
+      document.getElementById('formProducto').reset();
+      document.getElementById('imagenes').required = true;
+    }
+
+    // 1) Cargar y renderizar todos los productos “lociones” desde el backend
     async function cargarYRenderizarProductos() {
       try {
         const resp = await fetch(`${BACKEND_URL}/api/products`);
         const productos = await resp.json();
-        const grid = document.getElementById('productosGrid');
+        const grid = document.getElementById('productos');
         grid.innerHTML = '';
 
         productos.forEach(prod => {
-          // Solo mostrar aquellos cuya categoría sea "shorts"
-          if (prod.categoria !== 'shorts') return;
+          // Solo mostrar aquellos cuya categoría sea "lociones"
+          if (prod.categoria !== 'lociones') return;
 
           const div = document.createElement('div');
           div.className = 'producto';
@@ -463,12 +507,12 @@
 
           // Imagen clickeable a detalle.html
           const enlace = document.createElement('a');
-          enlace.href = `detalle.html?categoria=shorts&id=${prod._id}`;
+          enlace.href = `detalle.html?categoria=lociones&id=${prod._id}`;
           enlace.target = '_blank';
           const img = document.createElement('img');
           img.src = (prod.imagenes && prod.imagenes.length > 0) 
             ? prod.imagenes[0] 
-            : 'placeholder.jpg';
+            : '';
           img.alt = prod.nombre;
           enlace.appendChild(img);
           div.appendChild(enlace);
@@ -519,19 +563,19 @@
               .map(c => c.trim().toLowerCase());
 
             const diccionarioColores = {
-              rojo: "red",
-              verde: "green",
-              azul: "blue",
-              negro: "black",
-              blanco: "white",
-              amarillo: "yellow",
+              rojo:    "red",
+              verde:   "green",
+              azul:    "blue",
+              negro:   "black",
+              blanco:  "white",
+              amarillo:"yellow",
               naranja: "orange",
-              morado: "purple",
-              rosado: "pink",
-              gris: "gray",
-              marron: "brown",
-              cian: "cyan",
-              fucsia: "magenta"
+              morado:  "purple",
+              rosado:  "pink",
+              gris:    "gray",
+              marron:  "brown",
+              cian:    "cyan",
+              fucsia:  "magenta"
             };
 
             arrayDeColores.forEach(colorNombre => {
@@ -578,7 +622,7 @@
 
     // 2) Abrir la página de detalle para “Añadir al carrito”
     function irADetalle(id) {
-      const url = `detalle.html?categoria=shorts&id=${id}`;
+      const url = `detalle.html?categoria=lociones&id=${id}`;
       window.open(url, "_blank");
     }
 
@@ -614,8 +658,7 @@
       document.getElementById('colores').value = prod.colores || "";
       document.getElementById('precio').value = prod.precio;
       document.getElementById('promo').value = prod.promo || "";
-      document.getElementById('imagenesUrls').value = (prod.imagenes || []).join(', ');
-      document.getElementById('formProducto').querySelector('h3').textContent = "Editar producto (Shorts)";
+      document.getElementById('formProducto').querySelector('h3').textContent = "Editar producto (Lociones)";
       document.getElementById('submitBtn').textContent = "Guardar cambios";
       document.getElementById('formProducto').style.display = 'block';
     }
@@ -675,7 +718,7 @@
       }
     }
 
-    // Habilita los eventos para detectar Ctrl+Shift+A y continuar con login
+    // Detectar Ctrl+Shift+A para iniciar sesión Admin
     window.addEventListener('keydown', async (e) => {
       if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
         e.preventDefault();
