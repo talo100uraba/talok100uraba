@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Promociones - TALØ</title>
+  <!-- Hoja de estilos global (estilos_animaciones.css) -->
+  <link rel="stylesheet" href="estilos_animaciones.css" />
+  <style>
+    /* ================================
+       Estilos específicos para promocion.html
+       ================================ */
+
+    body {
+      padding-top: 80px; /* Deja espacio para el header fijo */
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      color: #000;
+      box-sizing: border-box;
+    }
+
+    /* ------------ HEADER -------------- */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 60px; /* Altura del header */
+      background-color: #fff;
+      border-bottom: 1px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center; /* Centra logo + título */
+      z-index: 100;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+    .menu-toggle {
+      position: absolute;
+      left: 20px;
+      font-size: 2rem;
+      background: none;
+      border: none;
+      color: #000;
+      cursor: pointer;
+      z-index: 110;
+    }
+    #logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #logo img {
+      width: 70px;
+      height: 70px;
+    }
+    #logo h1 {
+      font-size: 2.5rem;
+      margin: 0;
+    }
+    .menu-links {
+      display: none;
+      flex-direction: column;
+      position: absolute;
+      top: 60px;   /* Debajo del header */
+      left: 20px;  /* Alineado con el ícono hamburguesa */
+      background-color: #000;
+      border: 1px solid #fff;
+      padding: 10px;
+      z-index: 300;
+      box-sizing: border-box;
+    }
+    .menu-links.show {
+      display: flex;
+    }
+    .menu-links a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      transition: color 0.3s;
+    }
+    .menu-links a:hover {
+      color: #ccc;
+    }
+    /* ---------------------------------- */
+
+    /* Grid de productos en promoción */
+    .productos-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 20px;
+      padding: 0 20px 40px 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+    .producto {
+      background-color: #fff;
+      border: 1px solid #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px;
+      position: relative;
+      height: 100%;
+      box-sizing: border-box;
+    }
+    .producto img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border: 2px solid #000;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    .producto h3 {
+      font-size: 1.1rem;
+      margin: 5px 0;
+      text-align: center;
+    }
+    .producto p {
+      font-size: 0.95rem;
+      margin: 3px 0;
+      text-align: center;
+    }
+
+    /* Etiqueta “-XX%” sobre la imagen (descuento) */
+    .descuento-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background-color: #c00;
+      color: #fff;
+      padding: 4px 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      border-radius: 3px;
+      z-index: 10;
+    }
+
+    /* Botón “Ver detalles / Añadir al carrito” */
+    .btn-carrito {
+      margin-top: auto;
+      background-color: #000;
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 3px;
+      font-size: 0.95rem;
+    }
+
+    /* Botón “Ir al carrito” */
+    .ir-al-carrito {
+      display: block;
+      text-align: center;
+      margin: 20px auto 40px auto;
+      font-weight: bold;
+      text-decoration: none;
+      color: #000;
+      border: 1px solid #000;
+      padding: 10px 20px;
+      width: fit-content;
+      background-color: #fff;
+      border-radius: 3px;
+    }
+
+    /* Mensaje cuando no hay productos en promoción */
+    .vacio {
+      text-align: center;
+      font-size: 1.2rem;
+      margin: 40px 0;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      margin-top: 20px;
+      padding: 20px 0;
+      background-color: #fff;
+      border-top: 1px solid #000;
+    }
+    footer h3 {
+      margin-bottom: 10px;
+    }
+    footer p {
+      font-size: 0.95rem;
+    }
+
+    /* Responsive: 2 columnas en pantallas pequeñas */
+    @media screen and (max-width: 768px) {
+      .productos-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ==============================
+       HEADER: LOGO + TÍTULO + HAMBURGUESA
+       ============================== -->
+  <header>
+    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+    <div id="logo">
+      <img src="imagenes/talo.png" alt="Logo Talø" />
+      <h1>PROMOCIONES</h1>
+    </div>
+    <nav id="menu" class="menu-links">
+      <a href="index.html">Inicio</a>
+      <a href="camisas.html">Camisas</a>
+      <a href="shorts.html">Shorts</a>
+      <a href="gorras.html">Gorras</a>
+      <a href="lociones.html">Lociones</a>
+      <a href="promociones.html">Promociones</a>
+    </nav>
+  </header>
+
+  <!-- ========================================
+       Grilla de productos en descuento
+       ======================================== -->
+  <div class="productos-grid" id="productosPromo">
+    <!-- Aquí el JS inyectará cada producto con descuento -->
+  </div>
+
+  <!-- Botón ir al carrito -->
+  <a href="carrito.html" class="ir-al-carrito">🛒 Ir al carrito</a>
+
+  <!-- Pie de página -->
+  <footer>
+    <h3>Acerca de Nosotros</h3>
+    <p>Calidad, estilo y buen precio. Muy pronto más funciones y productos.</p>
+  </footer>
+
+  <!-- ============================================================
+       SCRIPT: IndexedDB (varias categorías) + Renderizado de promociones
+       ============================================================ -->
+  <script>
+    // Mostrar/ocultar menú hamburguesa
+    function toggleMenu() {
+      document.getElementById("menu").classList.toggle("show");
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const contenedorPromo = document.getElementById("productosPromo");
+
+      // Categorías en las que buscar productos con promo
+      const categorias = ['camisas', 'shorts', 'gorras', 'lociones'];
+      // Si existe un objectStore “promociones” propio, agregar aquí:
+      // categorias.push('promociones');
+
+      // Abrir (o crear) base IndexedDB
+      const requestDB = indexedDB.open("TALODB", 1);
+
+      requestDB.onupgradeneeded = function(event) {
+        const db = event.target.result;
+        // Asegurarse de que existan los objectStores para cada categoría
+        categorias.forEach(cat => {
+          if (!db.objectStoreNames.contains(cat)) {
+            db.createObjectStore(cat, { keyPath: "id", autoIncrement: true });
+          }
+        });
+      };
+
+      requestDB.onsuccess = function(event) {
+        const db = event.target.result;
+
+        // Para cada categoría, obtener todos los productos y filtrar por promo
+        const promesas = categorias.map(cat => {
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(cat, "readonly");
+            const store = tx.objectStore(cat);
+            const getAllReq = store.getAll();
+
+            getAllReq.onsuccess = function(evt) {
+              const items = evt.target.result || [];
+              // Filtrar solo los que tengan promo válida
+              const conDescuento = items.filter(p => p.promo && !isNaN(parseInt(p.promo)));
+              // Anotar la categoría para construir enlaces
+              conDescuento.forEach(p => p.categoria = cat);
+              resolve(conDescuento);
+            };
+
+            getAllReq.onerror = function(err) {
+              console.error(`Error leyendo productos de ${cat}:`, err);
+              resolve([]); // Resolver con lista vacía en caso de error
+            };
+          });
+        });
+
+        Promise.all(promesas).then(arrays => {
+          // “arrays” es un arreglo de arreglos; aplanar
+          const productosPromo = arrays.flat();
+
+          if (productosPromo.length === 0) {
+            // Si no hay productos con descuento
+            contenedorPromo.innerHTML = `<p class="vacio">No hay productos en promoción por el momento.</p>`;
+            return;
+          }
+
+          // Renderizar cada producto en promoción
+          productosPromo.forEach(prod => {
+            // Calcular precio original y precio final
+            const precioOriginal = prod.precio;
+            const descuento = parseInt(prod.promo);
+            const precioFinal = Math.round(precioOriginal * (1 - descuento / 100));
+
+            // Contenedor del producto
+            const div = document.createElement('div');
+            div.className = 'producto';
+
+            // Etiqueta de descuento (“-XX%”)
+            const badge = document.createElement('div');
+            badge.className = 'descuento-badge';
+            badge.textContent = `-${descuento}%`;
+            div.appendChild(badge);
+
+            // Imagen principal clickeable a detalle
+            const enlace = document.createElement('a');
+            enlace.href = `detalle.html?categoria=${prod.categoria}&id=${prod.id}`;
+            enlace.target = '_blank';
+            const img = document.createElement('img');
+            img.src = (prod.imagenes && prod.imagenes[0]) || '';
+            img.alt = prod.nombre;
+            enlace.appendChild(img);
+            div.appendChild(enlace);
+
+            // Nombre
+            const h3 = document.createElement('h3');
+            h3.textContent = prod.nombre;
+            div.appendChild(h3);
+
+            // Precio: mostrar precio final y precio original tachado
+            const pPrecio = document.createElement('p');
+            pPrecio.innerHTML = `<span style="font-size: 1.1rem; font-weight: bold;">$${precioFinal.toLocaleString()}</span>
+                                 <span style="text-decoration: line-through; color: gray; margin-left: 6px;">
+                                   $${precioOriginal.toLocaleString()}
+                                 </span>`;
+            div.appendChild(pPrecio);
+
+            // Botón “Ver detalles / Añadir al carrito”
+            const btnCar = document.createElement('button');
+            btnCar.className = 'btn-carrito';
+            btnCar.textContent = 'Ver detalles';
+            btnCar.onclick = () => {
+              window.open(`detalle.html?categoria=${prod.categoria}&id=${prod.id}`, "_blank");
+            };
+            div.appendChild(btnCar);
+
+            contenedorPromo.appendChild(div);
+          });
+        });
+      };
+
+      requestDB.onerror = function(event) {
+        console.error("Error abriendo IndexedDB en promocion.html:", event.target.errorCode);
+        contenedorPromo.innerHTML = `<p class="vacio">No se pudo cargar las promociones.</p>`;
+      };
+    });
+  </script>
+</body>
+</html>
