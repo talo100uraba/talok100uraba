@@ -334,13 +334,13 @@
        ================================================================= -->
   <script>
     const BACKEND_URL = "https://taloadmin-backend.onrender.com";
-    const categoria = "camisas";
+    const categoria   = "camisas";
 
-    const btnAdmin = document.getElementById('modoAdminBtn');
-    const form = document.getElementById('formProducto');
-    const productosDiv = document.getElementById('productos');
-    const formTitulo = document.getElementById('formTitulo');
-    const submitBtn = document.getElementById('submitBtn');
+    const btnAdmin      = document.getElementById('modoAdminBtn');
+    const form          = document.getElementById('formProducto');
+    const productosDiv  = document.getElementById('productos');
+    const formTitulo    = document.getElementById('formTitulo');
+    const submitBtn     = document.getElementById('submitBtn');
     const inputImagenes = document.getElementById('imagenes');
 
     // Mostrar/ocultar menú hamburguesa
@@ -371,9 +371,11 @@
     // 1) Cargar productos desde el backend
     async function cargarProductos() {
       try {
+        console.log("🔍 Invocando cargarProductos()…");
         const resp = await fetch(`${BACKEND_URL}/api/products`);
         if (!resp.ok) throw new Error("No se pudieron cargar los productos.");
         const todos = await resp.json();
+        console.log("🎉 Productos recibidos en frontend:", todos);
         const soloCamisas = todos.filter(p => p.categoria === categoria);
         mostrarProductosEnPantalla(soloCamisas);
       } catch (err) {
@@ -384,6 +386,7 @@
 
     // 2) Renderizar productos en la grilla
     function mostrarProductosEnPantalla(productos) {
+      console.log("🏗️  Renderizando productos en pantalla:", productos);
       productosDiv.innerHTML = '';
       productos.forEach(prod => {
         const card = document.createElement('div');

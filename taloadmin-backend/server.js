@@ -4,14 +4,12 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const mongoose = require('mongoose');    // ──────── (NUEVO) Importar mongoose
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ----------  Configuración de CORS   ----------
-// En producción, reemplaza origin: true por tu dominio de GitHub Pages:
-// origin: 'https://talo100uraba.github.io'
 app.use(cors({
   origin: 'https://talo100uraba.github.io', // tu dominio de GitHub Pages
   methods: ['GET','POST','PUT','DELETE'],
@@ -19,8 +17,9 @@ app.use(cors({
   credentials: true
 }));
 
-// ----------  Middleware para parsear JSON  ----------
-app.use(express.json());
+// ----------  Middleware para parsear JSON con límite aumentado a 10mb  ----------
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // ----------  Conexión a MongoDB Atlas  ----------
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -51,9 +50,6 @@ app.get('/', (req, res) => {
 // ==============================
 // ===   RUTA POST /login   ====
 // ==============================
-// Recibe { username, password } en el body.
-// Comprueba que username === ADMIN_USERNAME y que password coincida con el hash.
-// Si OK, genera un JWT; si no, 401.
 app.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -61,29 +57,18 @@ app.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Faltan credenciales.' });
     }
 
-    // 1) Verificar que sea el admin correcto
     if (username !== ADMIN_USERNAME) {
       return res.status(401).json({ error: 'Usuario o contraseña inválidos.' });
     }
 
-    // 2) Comparar la contraseña con el hash
     const match = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
     if (!match) {
       return res.status(401).json({ error: 'Usuario o contraseña inválidos.' });
     }
 
-    // 3) Crear payload del JWT
-    const payload = {
-      user: username,
-      role: 'admin'
-    };
-
-    // 4) Firmar el token
+    const payload = { user: username, role: 'admin' };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRATION });
-
-    // 5) Devolver token
     res.json({ token });
-
   } catch (error) {
     console.error('Error en /login:', error);
     res.status(500).json({ error: 'Error interno del servidor.' });
@@ -109,7 +94,7 @@ function verifyJWT(req, res, next) {
     if (err) {
       return res.status(401).json({ error: 'Token inválido o expirado.' });
     }
-    req.user = decoded; // guardamos el payload en req.user
+    req.user = decoded;
     next();
   });
 }
@@ -153,9 +138,12 @@ app.get('/api/products/:id', async (req, res) => {
 // Crear un nuevo producto (requiere JWT)
 app.post('/api/products', verifyJWT, async (req, res) => {
   try {
-    const { nombre, descripcion, precio, imagenes, colores, tallas } = req.body;
-    if (!nombre || precio == null) {
-      return res.status(400).json({ error: 'Falta nombre o precio.' });
+    // Ahora extraemos también promo y categoria
+    const { nombre, descripcion, precio, imagenes, colores, tallas, promo, categoria } = req.body;
+
+    // Validar campos obligatorios: nombre, precio y categoría
+    if (!nombre || precio == null || !categoria) {
+      return res.status(400).json({ error: 'Falta nombre, precio o categoría.' });
     }
 
     const nuevoProducto = new Product({
@@ -164,7 +152,9 @@ app.post('/api/products', verifyJWT, async (req, res) => {
       precio,
       imagenes: imagenes || [],
       colores: colores || [],
-      tallas: tallas || []
+      tallas: tallas || [],
+      promo: promo || '',
+      categoria
     });
 
     const productoGuardado = await nuevoProducto.save();
@@ -179,11 +169,17 @@ app.post('/api/products', verifyJWT, async (req, res) => {
 app.put('/api/products/:id', verifyJWT, async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, descripcion, precio, imagenes, colores, tallas } = req.body;
+    // También extraemos promo y categoria para que puedan editarse
+    const { nombre, descripcion, precio, imagenes, colores, tallas, promo, categoria } = req.body;
+
+    // Validar que categoría esté presente (o dejar que sea la misma)
+    if (!nombre || precio == null || !categoria) {
+      return res.status(400).json({ error: 'Falta nombre, precio o categoría.' });
+    }
 
     const productoActualizado = await Product.findByIdAndUpdate(
       id,
-      { nombre, descripcion, precio, imagenes, colores, tallas },
+      { nombre, descripcion, precio, imagenes, colores, tallas, promo, categoria },
       { new: true, runValidators: true }
     );
 
