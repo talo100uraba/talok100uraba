@@ -324,8 +324,8 @@
   </footer>
 
   <!-- ============================================================
-       SCRIPT: Menú hamburguesa, IndexedDB + Renderizado de promociones
-       + CRUD (modo Admin) para agregar promociones manualmente
+       SCRIPT: Menú hamburguesa, fetch a backend + Renderizado
+       de promociones + CRUD (modo Admin) para agregar/promociones
        ============================================================ -->
   <script>
     // Mostrar/ocultar menú hamburguesa
@@ -340,14 +340,19 @@
     const formTitulo   = document.getElementById('formTitulo');
     const submitBtn    = document.getElementById('submitBtn');
     const inputImgs    = document.getElementById('imagenes');
+    const inputNombre      = document.getElementById('nombre');
+    const inputDescripcion = document.getElementById('descripcion');
+    const inputTallas      = document.getElementById('tallas');
+    const inputColores     = document.getElementById('colores');
+    const inputPrecio      = document.getElementById('precio');
+    const inputPromo       = document.getElementById('promo');
+    const inputProductoId  = document.getElementById('productoId');
 
     // 1) Al cargar la página:
-    //    • Inicializar IndexedDB (versión 2 para crear, si no existe, store "promociones")
-    //    • Cargar y mostrar todas las promociones (de categorías + store "promociones")
+    //    • Cargar y mostrar todas las promociones desde el backend
     //    • Si hay token JWT válido, desplegar botón "Modo Admin"
     window.addEventListener('DOMContentLoaded', () => {
-      inicializarIndexedDB();
-      // Si existe token Admin válido, mostramos botón
+      cargarPromocionesDesdeAPI();
       if (tieneTokenValido()) {
         btnAdmin.style.display = 'block';
       }
@@ -360,84 +365,22 @@
       });
     });
 
-    let db;
-    function inicializarIndexedDB() {
-      const categorias = ['camisas', 'shorts', 'gorras', 'lociones', 'promociones'];
-      // Abrimos la base en versión 2 (para crear "promociones" si no existía)
-      const requestDB = indexedDB.open("TALODB", 2);
-
-      requestDB.onupgradeneeded = function(event) {
-        db = event.target.result;
-        // Crear, si no existen, todos los objectStores necesarios
-        categorias.forEach(cat => {
-          if (!db.objectStoreNames.contains(cat)) {
-            db.createObjectStore(cat, { keyPath: "id", autoIncrement: true });
-          }
-        });
-      };
-
-      requestDB.onsuccess = function(event) {
-        db = event.target.result;
-        // Una vez abierta la base, cargamos todas las promociones:
-        cargarPromociones();
-      };
-
-      requestDB.onerror = function(event) {
-        console.error("Error al abrir IndexedDB:", event.target.errorCode);
-        contPromo.innerHTML = `<p class="vacio">No se pudo cargar las promociones.</p>`;
-      };
-    }
-
-    // 2) Cargar y renderizar todas las promociones (categorías + store "promociones")
-    async function cargarPromociones() {
+    // 2) Cargar todas las promociones desde el servidor
+    async function cargarPromocionesDesdeAPI() {
       contPromo.innerHTML = "";
-      const categorias = ['camisas', 'shorts', 'gorras', 'lociones'];
-      const promesasCategorias = categorias.map(cat => {
-        return new Promise(resolve => {
-          const tx = db.transaction(cat, "readonly");
-          const store = tx.objectStore(cat);
-          const getAllReq = store.getAll();
-          getAllReq.onsuccess = function(evt) {
-            const items = evt.target.result || [];
-            // Filtrar solo los que tengan promo válida
-            const conDescuento = items.filter(p => p.promo && !isNaN(parseInt(p.promo)));
-            // Anotar la categoría en cada objeto
-            conDescuento.forEach(p => p.categoria = cat);
-            resolve(conDescuento);
-          };
-          getAllReq.onerror = function() {
-            resolve([]); // en caso de error devolvemos array vacío
-          };
-        });
-      });
-
-      // Leer también el objectStore "promociones" (agregadas manualmente)
-      const promesaPropias = new Promise(resolve => {
-        const tx = db.transaction("promociones", "readonly");
-        const store = tx.objectStore("promociones");
-        const getAllReq = store.getAll();
-        getAllReq.onsuccess = function(evt) {
-          const items = evt.target.result || [];
-          // A cada objeto le asignamos `categoria = "promociones"` para el enlace (o podrías omitirlo)
-          items.forEach(p => p.categoria = "promociones");
-          resolve(items);
-        };
-        getAllReq.onerror = function() {
-          resolve([]);
-        };
-      });
-
-      // Esperamos a todas las lecturas
-      const arraysDeCat = await Promise.all(promesasCategorias);
-      const propias = await promesaPropias;
-      const todos = arraysDeCat.flat().concat(propias);
-
-      if (todos.length === 0) {
-        contPromo.innerHTML = `<p class="vacio">No hay productos en promoción por el momento.</p>`;
-        return;
+      try {
+        const resp = await fetch(`${BACKEND_URL}/api/promociones`);
+        if (!resp.ok) throw new Error("No se pudieron cargar promociones.");
+        const arr = await resp.json();
+        if (!arr.length) {
+          contPromo.innerHTML = `<p class="vacio">No hay productos en promoción por el momento.</p>`;
+          return;
+        }
+        arr.forEach(prod => mostrarProductoPromo(prod));
+      } catch (err) {
+        console.error("Error al cargar promociones:", err);
+        contPromo.innerHTML = `<p class="vacio">Error al cargar las promociones.</p>`;
       }
-      // Renderizar cada producto en promoción
-      todos.forEach(prod => mostrarProductoPromo(prod));
     }
 
     // 3) Renderizar tarjeta individual de cada promoción
@@ -457,14 +400,7 @@
 
       // Imagen clickeable
       const enlace = document.createElement('a');
-      // Si la categoría es "promociones", abrimos detalle sin categoría distinta,
-      // de lo contrario apuntamos a la categoría que corresponde:
-      if (prod.categoria === "promociones") {
-        // Puedes usar un enlace genérico; aquí solo abrimos detalle.html sin categoría
-        enlace.href = `detalle.html?id=${prod.id}`;
-      } else {
-        enlace.href = `detalle.html?categoria=${prod.categoria}&id=${prod.id}`;
-      }
+      enlace.href = `detalle.html?categoria=${encodeURIComponent(prod.categoria)}&id=${prod._id}`;
       enlace.target = '_blank';
       const img = document.createElement('img');
       img.src = (prod.imagenes && prod.imagenes[0]) || '';
@@ -493,34 +429,32 @@
 
       const palette = document.createElement('div');
       palette.className = 'color-palette';
-      if (prod.colores && prod.colores.trim() !== "") {
-        const arrCol = prod.colores
-          .split(',')
-          .map(c => c.trim().toLowerCase());
-        // Diccionario español→CSS
-        const dic = {
-          rojo:    "red",
-          verde:   "green",
-          azul:    "blue",
-          negro:   "black",
-          blanco:  "white",
-          amarillo:"yellow",
-          naranja: "orange",
-          morado:  "purple",
-          rosado:  "pink",
-          gris:    "gray",
-          marron:  "brown",
-          cian:    "cyan",
-          fucsia:  "magenta",
-          marrón:  "brown"
-        };
-        arrCol.forEach(colorNombre => {
+      if (Array.isArray(prod.colores) && prod.colores.length) {
+        prod.colores.forEach(colorNombre => {
           const circle = document.createElement('span');
           circle.className = 'color-circle';
-          if (dic[colorNombre]) {
-            circle.style.backgroundColor = dic[colorNombre];
-          } else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorNombre)) {
-            circle.style.backgroundColor = colorNombre;
+          const name = colorNombre.trim().toLowerCase();
+          // Diccionario español → CSS
+          const dic = {
+            rojo:    "red",
+            verde:   "green",
+            azul:    "blue",
+            negro:   "black",
+            blanco:  "white",
+            amarillo:"yellow",
+            naranja: "orange",
+            morado:  "purple",
+            rosado:  "pink",
+            gris:    "gray",
+            marron:  "brown",
+            marrón:  "brown",
+            cian:    "cyan",
+            fucsia:  "magenta"
+          };
+          if (dic[name]) {
+            circle.style.backgroundColor = dic[name];
+          } else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(name)) {
+            circle.style.backgroundColor = name;
           } else {
             circle.style.backgroundColor = "#fff";
           }
@@ -539,11 +473,7 @@
       btnCar.className = 'btn-carrito';
       btnCar.textContent = 'Ver detalles';
       btnCar.onclick = () => {
-        if (prod.categoria === "promociones") {
-          window.open(`detalle.html?id=${prod.id}`, "_blank");
-        } else {
-          window.open(`detalle.html?categoria=${prod.categoria}&id=${prod.id}`, "_blank");
-        }
+        window.open(`detalle.html?categoria=${encodeURIComponent(prod.categoria)}&id=${prod._id}`, "_blank");
       };
       div.appendChild(btnCar);
 
@@ -611,18 +541,18 @@
     function prepararFormularioParaAgregar() {
       formTitulo.textContent = "Agregar nueva promoción";
       submitBtn.textContent = "Añadir promoción";
-      document.getElementById('productoId').value = "";
-      document.getElementById('nombre').value = "";
-      document.getElementById('descripcion').value = "";
-      document.getElementById('tallas').value = "";
-      document.getElementById('colores').value = "";
-      document.getElementById('precio').value = "";
-      document.getElementById('promo').value = "";
+      inputProductoId.value = "";
+      inputNombre.value = "";
+      inputDescripcion.value = "";
+      inputTallas.value = "";
+      inputColores.value = "";
+      inputPrecio.value = "";
+      inputPromo.value = "";
       form.reset();
       inputImgs.required = true;
     }
 
-    // 8) Manejo del formulario (submit) → crear una promoción en objectStore "promociones"
+    // 8) Manejo del formulario (submit) → crear o editar promoción en el backend
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -630,17 +560,26 @@
         alert("🚫 Debes iniciar sesión como Admin para guardar cambios.");
         return;
       }
-      if (!db) {
-        alert("La base de datos no está lista.");
+
+      // Leer campo de ID (si existe, estamos en EDICIÓN; si está vacío, en CREACIÓN)
+      const idEdicion = inputProductoId.value.trim();
+      // Leer campos del formulario
+      const nombre      = inputNombre.value.trim();
+      const descripcion = inputDescripcion.value.trim();
+      const tallas      = inputTallas.value.split(',').map(s => s.trim()).filter(s => s);
+      const colores     = inputColores.value.split(',').map(s => s.trim()).filter(s => s);
+      const precioVal   = parseFloat(inputPrecio.value);
+      const promoVal    = parseInt(inputPromo.value);
+      const archivos    = inputImgs.files;
+
+      if (!nombre || isNaN(precioVal) || isNaN(promoVal)) {
+        alert("Nombre, precio y promo son obligatorios y deben ser números válidos.");
         return;
       }
 
-      const idEdicion = document.getElementById('productoId').value;
+      // Procesar imágenes a Base64 (solo si creamos o subimos nuevas imágenes en edición)
       let imagenesArray = [];
-      const archivos = inputImgs.files;
-
-      // En modo CREAR (no edición), exigimos al menos una imagen:
-      if (!idEdicion) {
+      if (!idEdicion || (archivos && archivos.length > 0)) {
         if (!archivos || archivos.length === 0) {
           alert("Debes seleccionar al menos una imagen.");
           return;
@@ -673,44 +612,53 @@
         }
       }
 
-      // Leemos los demás campos:
-      const nombre      = document.getElementById('nombre').value;
-      const descripcion = document.getElementById('descripcion').value;
-      const tallas      = document.getElementById('tallas').value;
-      const colores     = document.getElementById('colores').value;
-      const precio      = parseFloat(document.getElementById('precio').value);
-      const promo       = document.getElementById('promo').value;
-
-      if (!nombre || isNaN(precio) || !promo) {
-        alert("Nombre, precio y promo son obligatorios.");
-        return;
-      }
-
-      // Empaquetamos el objeto de la promoción:
-      const nuevoPromo = {
-        nombre:      nombre,
-        descripcion: descripcion,
-        tallas:      tallas,               // Puedes enviarlo como cadena o como array
-        colores:     colores,              // idem
-        precio:      precio,
-        promo:       promo,
-        imagenes:    imagenesArray
+      // Construir payload para la API
+      const productoData = {
+        nombre,
+        descripcion,
+        tallas,
+        colores,
+        precio: precioVal,
+        promo: promoVal,
+        imagenes: imagenesArray,
+        categoria: "promociones"
       };
 
-      // INSERTAR en objectStore "promociones"
-      const tx = db.transaction("promociones", "readwrite");
-      const store = tx.objectStore("promociones");
-      const addReq = store.add(nuevoPromo);
-      addReq.onsuccess = function() {
-        alert("✔️ Promoción agregada correctamente.");
+      try {
+        let resp;
+        if (idEdicion) {
+          // EDICIÓN: PUT a /api/products/:id
+          resp = await fetch(`${BACKEND_URL}/api/products/${idEdicion}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('admin_jwt')}`
+            },
+            body: JSON.stringify(productoData)
+          });
+        } else {
+          // CREACIÓN: POST a /api/promociones
+          resp = await fetch(`${BACKEND_URL}/api/promociones`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('admin_jwt')}`
+            },
+            body: JSON.stringify(productoData)
+          });
+        }
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.error || 'Error al guardar promoción');
+        }
+        alert(idEdicion ? "✔️ Promoción actualizada correctamente." : "✔️ Promoción agregada correctamente.");
         form.reset();
         form.style.display = 'none';
-        cargarPromociones();
-      };
-      addReq.onerror = function(event) {
-        console.error("Error al guardar promoción:", event.target.error);
-        alert("No se pudo guardar la promoción.");
-      };
+        cargarPromocionesDesdeAPI();
+      } catch (err) {
+        console.error("Error al guardar promoción:", err);
+        alert("Error al guardar promoción.");
+      }
     });
   </script>
 </body>

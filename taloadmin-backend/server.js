@@ -34,9 +34,9 @@ mongoose.connect(MONGODB_URI, {
 });
 
 // ----------  Variables de entorno  ----------
-const JWT_SECRET         = process.env.JWT_SECRET;
-const JWT_EXPIRATION     = process.env.JWT_EXPIRATION || '1h';
-const ADMIN_USERNAME     = process.env.ADMIN_USERNAME;
+const JWT_SECRET          = process.env.JWT_SECRET;
+const JWT_EXPIRATION      = process.env.JWT_EXPIRATION || '1h';
+const ADMIN_USERNAME      = process.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
 
 // ----------  Importar modelo de Producto  ----------
@@ -94,7 +94,7 @@ function verifyJWT(req, res, next) {
     if (err) {
       return res.status(401).json({ error: 'Token inválido o expirado.' });
     }
-    req.user = decoded;
+    req.user = decoded; // guardamos el payload en req.user
     next();
   });
 }
@@ -107,7 +107,7 @@ app.get('/api/test', verifyJWT, (req, res) => {
 });
 
 // =================================================
-// ===    RUTAS CRUD PARA “PRODUCTS” (protegidas)   ===
+// ===    RUTAS CRUD PARA “PRODUCTS” (PROTEGIDAS)  ===
 // =================================================
 
 // Obtener todos los productos (público)
@@ -208,6 +208,61 @@ app.delete('/api/products/:id', verifyJWT, async (req, res) => {
   } catch (err) {
     console.error('Error al eliminar producto:', err);
     res.status(500).json({ error: 'Error al eliminar producto.' });
+  }
+});
+
+// ============================================
+// ===    RUTA GET /api/promociones   ========
+// ============================================
+// Devuelve todos los productos cuyo campo `promo` no esté vacío.
+app.get('/api/promociones', async (req, res) => {
+  try {
+    // Buscamos en la colección Product todos los que tengan un valor válido en `promo`
+    const promociones = await Product.find({ promo: { $exists: true, $ne: "" } }).sort({ fechaCreacion: -1 });
+    res.json(promociones);
+  } catch (err) {
+    console.error('Error al obtener promociones:', err);
+    res.status(500).json({ error: 'Error al obtener promociones.' });
+  }
+});
+
+// ================================================
+// ===    RUTA POST /api/promociones (opcional) ===
+// ================================================
+// Si prefieres un endpoint dedicado para crear promociones, puedes usarlo.
+// Requiere JWT para validar que solo Admin las agregue.
+app.post('/api/promociones', verifyJWT, async (req, res) => {
+  try {
+    // Esperamos: nombre, descripcion, precio, imagenes, colores, tallas, promo (obligatorio), y opcionalmente categoria
+    const { nombre, descripcion, precio, imagenes, colores, tallas, promo, categoria } = req.body;
+
+    // Validar campos mínimos
+    if (!nombre || precio == null || !promo) {
+      return res.status(400).json({ error: 'Falta nombre, precio o promo.' });
+    }
+    // Convertir promo a número y verificar
+    const promoInt = parseInt(promo);
+    if (isNaN(promoInt)) {
+      return res.status(400).json({ error: 'El campo promo debe ser un número válido.' });
+    }
+
+    const nuevaPromocion = new Product({
+      nombre,
+      descripcion: descripcion || '',
+      precio,
+      imagenes: imagenes || [],
+      colores: colores || [],
+      tallas: tallas || [],
+      promo: promoInt,
+      // Si no se envía categoría, podemos asignar "promociones" por defecto
+      categoria: categoria || 'promociones'
+    });
+
+    const promocionGuardada = await nuevaPromocion.save();
+    res.status(201).json(promocionGuardada);
+  } catch (err) {
+    console.error('Error al crear promoción:', err);
+    res.status(500).json({ error: 'Error al crear promoción.' });
   }
 });
 
