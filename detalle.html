@@ -323,20 +323,15 @@
   </footer>
 
   <script>
-    // Función para abrir/cerrar menú hamburguesa
+    // -------------- HELPERS --------------
+
+    // 1) Abrir/cerrar menú hamburguesa
     function toggleMenu() {
       document.getElementById("menu").classList.toggle("show");
     }
     window.toggleMenu = toggleMenu;
 
-    // 1) Leemos parámetros de la URL:
-    const params = new URLSearchParams(window.location.search);
-    const categoria = params.get("categoria"); // se espera "camisas", "shorts", etc.
-    const id = parseInt(params.get("id"));     // ID numérico
-
-    const container = document.getElementById("detalleProducto");
-
-    // Diccionario Español → CSS válido
+    // 2) Diccionario Español → CSS válido (para colorear los círculos de “Colores”)
     const diccionarioColores = {
       rojo:    "red",
       verde:   "green",
@@ -354,94 +349,136 @@
       'marrón': "brown"
     };
 
-    // Validar parámetros
-    if (!categoria || isNaN(id)) {
+    // 3) Mostrar una imagen grande al hacer clic en una miniatura
+    function mostrarImagen(ruta) {
+      document.getElementById('imagenPrincipal').src = ruta;
+    }
+
+    // 4) Seleccionar color: contorno negro grueso + almacenar valor
+    function seleccionarColor(el) {
+      document.querySelectorAll('.color').forEach(e => {
+        e.style.outline = 'none';
+        e.style.border = '1px solid #000';
+      });
+      el.style.outline = '2px solid #000';
+      el.style.border = '3px solid #000';
+      document.getElementById('colorSeleccionado').value = el.dataset.color;
+    }
+
+    // 5) Seleccionar talla: agregar/remover clase “selected”
+    function seleccionarTalla(el) {
+      document.querySelectorAll('.talla').forEach(e => e.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById('tallaSeleccionada').value = el.dataset.talla;
+    }
+
+    // 6) Añadir al carrito: verifica selección y guarda en localStorage
+    function agregarAlCarrito() {
+      const colorElegido = document.getElementById("colorSeleccionado")?.value;
+      const tallaElegida = document.getElementById("tallaSeleccionada")?.value;
+
+      const necesitaColor = document.getElementById("paletaColores") !== null;
+      const necesitaTalla = document.getElementById("listaTallas") !== null;
+
+      if ((necesitaColor && !colorElegido) || (necesitaTalla && !tallaElegida)) {
+        alert("Por favor selecciona color y/o talla antes de añadir al carrito.");
+        return;
+      }
+
+      // Recuperamos “categoria” e “id” directamente de la URL
+      const params2 = new URLSearchParams(window.location.search);
+      const categoria2 = params2.get("categoria");
+      const id2 = params2.get("id"); // ahora lo mantenemos como cadena
+
+      // Hacemos fetch al backend para recuperar el producto completo
+      fetch(`${BACKEND_URL}/api/products/${id2}`)
+        .then(r => {
+          if (!r.ok) throw new Error("Producto no encontrado en servidor");
+          return r.json();
+        })
+        .then(producto => {
+          // Armamos la copia a guardar en carrito
+          const copia = { ...producto };
+          if (necesitaColor) copia.colorElegido = colorElegido;
+          if (necesitaTalla) copia.tallaElegida = tallaElegida;
+
+          const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+          carrito.push(copia);
+          localStorage.setItem("carrito", JSON.stringify(carrito));
+          alert("Producto añadido al carrito.");
+        })
+        .catch(err => {
+          console.error("No se pudo añadir al carrito:", err);
+          alert("Error al añadir al carrito.");
+        });
+    }
+
+
+    // -------------- PRINCIPAL --------------
+
+    // 7) Extraer “categoria” e “id” de la URL
+    const params = new URLSearchParams(window.location.search);
+    const categoria = params.get("categoria");
+    const id        = params.get("id"); // mantenerlo como cadena porque el backend usa IDs de Mongo
+
+    const container = document.getElementById("detalleProducto");
+
+    // 8) Validar que vengan ambos parámetros
+    if (!categoria || !id) {
       container.innerHTML =
         "<p style='text-align:center; font-size:1.2rem;'>URL inválida o faltan parámetros.</p>";
     } else {
-      // 2) Abrimos IndexedDB "TALODB" versión 2
-      const requestDB = indexedDB.open("TALODB", 2);
-
-      requestDB.onupgradeneeded = function(event) {
-        const db = event.target.result;
-        // Asegurarnos de que existan todas las tiendas:
-        if (!db.objectStoreNames.contains("camisas")) {
-          db.createObjectStore("camisas", { keyPath: "id", autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains("shorts")) {
-          db.createObjectStore("shorts", { keyPath: "id", autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains("gorras")) {
-          db.createObjectStore("gorras", { keyPath: "id", autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains("lociones")) {
-          db.createObjectStore("lociones", { keyPath: "id", autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains("promociones")) {
-          db.createObjectStore("promociones", { keyPath: "id", autoIncrement: true });
-        }
-      };
-
-      requestDB.onsuccess = function(event) {
-        const db = event.target.result;
-
-        // 3) Iniciamos transacción para leer el producto por su clave (id)
-        let tx;
-        try {
-          tx = db.transaction(categoria, "readonly");
-        } catch (e) {
-          // La tienda "categoria" no existe
-          container.innerHTML =
-            "<p style='text-align:center; font-size:1.2rem;'>La categoría solicitada no existe.</p>";
-          return;
-        }
-        const store = tx.objectStore(categoria);
-
-        store.get(id).onsuccess = function(evt) {
-          const producto = evt.target.result;
-
-          if (!producto) {
-            container.innerHTML =
-              "<p style='text-align:center; font-size:1.2rem;'>Producto no encontrado.</p>";
-            return;
+      // 9) Hacemos fetch al backend para obtener el producto por _id
+      //    (no usamos IndexedDB, sino la API que ya tienes en el servidor)
+      window.BACKEND_URL = "https://taloadmin-backend.onrender.com";
+      fetch(`${BACKEND_URL}/api/products/${id}`)
+        .then(response => {
+          if (response.status === 404) {
+            throw new Error("Producto no encontrado.");
+          }
+          return response.json();
+        })
+        .then(producto => {
+          // Extraer datos del JSON recibido
+          const imagenes = Array.isArray(producto.imagenes) ? producto.imagenes : [];
+          // El back devuelve “colores” y “tallas” como arrays. Convertimos a cadenas si fuese necesario:
+          let coloresUnicos = [];
+          if (Array.isArray(producto.colores)) {
+            coloresUnicos = producto.colores
+              .map(c => (""+c).trim().toLowerCase())
+              .filter((v,i,a) => a.indexOf(v) === i);
           }
 
-          // 4) Preparamos arrays a partir del objeto producto
-          const imagenes = producto.imagenes || [];
+          let tallasUnicas = [];
+          if (Array.isArray(producto.tallas)) {
+            tallasUnicas = producto.tallas
+              .map(t => (""+t).trim().toUpperCase())
+              .filter((v,i,a) => a.indexOf(v) === i);
+          }
 
-          // Colores en minúscula únicos
-          const coloresUnicos = producto.colores
-            ? [...new Set(producto.colores.split(',').map(c => c.trim().toLowerCase()))]
-            : [];
-
-          // Tallas en mayúscula únicas
-          const tallasUnicas = producto.tallas
-            ? [...new Set(producto.tallas.split(',').map(t => t.trim().toUpperCase()))]
-            : [];
-
-          // 5) Calculamos precio y descuento
+          // Cálculo de precio y descuento
           const tieneDescuento = producto.promo && !isNaN(parseInt(producto.promo));
-          const descuento = tieneDescuento ? parseInt(producto.promo) : 0;
+          const descuento      = tieneDescuento ? parseInt(producto.promo) : 0;
           const precioOriginal = producto.precio;
-          const precioFinal = tieneDescuento
-            ? Math.round(precioOriginal * (1 - descuento / 100))
-            : precioOriginal;
+          const precioFinal    = tieneDescuento
+                                ? Math.round(precioOriginal * (1 - descuento / 100))
+                                : precioOriginal;
 
-          // 6) Generamos el HTML
+          // 10) Montar el HTML dentro de “container”
           container.innerHTML = `
             <div class="detalle-img">
               <div class="miniaturas">
                 ${imagenes
                   .map(
-                    img => `
+                    src => `
                   <img
-                    src="${img}"
+                    src="${src}"
                     class="miniatura"
-                    onclick="mostrarImagen('${img}')"
+                    onclick="mostrarImagen('${src}')"
                   >
                 `
                   )
-                  .join('')}
+                  .join("")}
               </div>
               <div class="imagen-principal-wrapper">
                 <img
@@ -486,7 +523,7 @@
                     <div class="colores" id="paletaColores">
                       ${coloresUnicos
                         .map(color => {
-                          const cssColor = diccionarioColores[color] || '#ffffff';
+                          const cssColor = diccionarioColores[color] || "#ffffff";
                           return `
                             <div
                               class="color"
@@ -497,11 +534,11 @@
                             ></div>
                           `;
                         })
-                        .join('')}
+                        .join("")}
                     </div>
                     <input type="hidden" id="colorSeleccionado" value="">
                   `
-                  : ''
+                  : ""
               }
               ${
                 tallasUnicas.length > 0
@@ -518,11 +555,11 @@
                         >${talla}</div>
                       `
                         )
-                        .join('')}
+                        .join("")}
                     </div>
                     <input type="hidden" id="tallaSeleccionada" value="">
                   `
-                  : ''
+                  : ""
               }
               <div class="botones">
                 <button onclick="agregarAlCarrito()">Añadir al carrito</button>
@@ -531,99 +568,12 @@
               </div>
             </div>
           `;
-        };
-
-        store.get(id).onerror = function(event) {
-          console.error("Error al obtener producto:", event.target.error);
+        })
+        .catch(error => {
+          console.error("Error al cargar el detalle:", error);
           container.innerHTML =
-            "<p style='text-align:center; font-size:1.2rem;'>Error al cargar detalle.</p>";
-        };
-      };
-
-      requestDB.onerror = function(event) {
-        console.error("Error abriendo IndexedDB en detalle.html:", event.target.errorCode);
-        container.innerHTML =
-          "<p style='text-align:center; font-size:1.2rem;'>No se pudo acceder a la base de datos.</p>";
-      };
-    }
-
-    // 7) Funciones auxiliares para selección de color/talla y añadir al carrito
-
-    function seleccionarColor(el) {
-      document.querySelectorAll('.color').forEach(e => {
-        e.style.outline = 'none';
-        e.style.border = '1px solid #000';
-      });
-      el.style.outline = '2px solid #000';
-      el.style.border = '3px solid #000';
-      document.getElementById('colorSeleccionado').value = el.dataset.color;
-    }
-
-    function seleccionarTalla(el) {
-      document.querySelectorAll('.talla').forEach(e => e.classList.remove('selected'));
-      el.classList.add('selected');
-      document.getElementById('tallaSeleccionada').value = el.dataset.talla;
-    }
-
-    function agregarAlCarrito() {
-      const colorElegido = document.getElementById("colorSeleccionado")?.value;
-      const tallaElegida = document.getElementById("tallaSeleccionada")?.value;
-
-      const necesitaColor = document.getElementById("paletaColores") !== null;
-      const necesitaTalla = document.getElementById("listaTallas") !== null;
-
-      if ((necesitaColor && !colorElegido) || (necesitaTalla && !tallaElegida)) {
-        alert("Por favor selecciona color y/o talla antes de añadir al carrito.");
-        return;
-      }
-
-      // Volvemos a leer el producto completo desde IndexedDB para armar el objeto del carrito
-      const params2 = new URLSearchParams(window.location.search);
-      const categoria2 = params2.get("categoria");
-      const id2 = parseInt(params2.get("id"));
-
-      const requestDB2 = indexedDB.open("TALODB", 2);
-      requestDB2.onsuccess = function(event) {
-        const db2 = event.target.result;
-        let tx2;
-        try {
-          tx2 = db2.transaction(categoria2, "readonly");
-        } catch {
-          alert("No se encontró la categoría al añadir al carrito.");
-          return;
-        }
-        const store2 = tx2.objectStore(categoria2);
-
-        store2.get(id2).onsuccess = function(evt) {
-          const producto = evt.target.result;
-          if (!producto) {
-            alert("El producto ya no existe.");
-            return;
-          }
-          const copia = { ...producto };
-          if (necesitaColor) copia.colorElegido = colorElegido;
-          if (necesitaTalla) copia.tallaElegida = tallaElegida;
-
-          const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-          carrito.push(copia);
-          localStorage.setItem("carrito", JSON.stringify(carrito));
-          alert("Producto añadido al carrito.");
-        };
-
-        store2.get(id2).onerror = function(event) {
-          console.error("Error al leer producto para carrito:", event.target.error);
-          alert("No se pudo añadir al carrito.");
-        };
-      };
-
-      requestDB2.onerror = function(event) {
-        console.error("Error abriendo IndexedDB al añadir carrito:", event.target.errorCode);
-        alert("No se pudo añadir al carrito. Intenta nuevamente.");
-      };
-    }
-
-    function mostrarImagen(ruta) {
-      document.getElementById('imagenPrincipal').src = ruta;
+            "<p style='text-align:center; font-size:1.2rem;'>Producto no encontrado.</p>";
+        });
     }
   </script>
 </body>
