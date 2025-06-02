@@ -4,15 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Promociones - TALØ</title>
-  <!-- Hoja de estilos global (estilos_animaciones.css) -->
   <link rel="stylesheet" href="estilos_animaciones.css" />
   <style>
     /* ================================
-       Estilos específicos para promocion.html
+       Ajustes de diseño para promociones.html
        ================================ */
 
     body {
-      padding-top: 80px; /* Deja espacio para el header fijo */
+      padding-top: 80px; /* Ajusta si el header cambia de altura */
       margin: 0;
       font-family: Arial, sans-serif;
       background-color: #f5f5f5;
@@ -26,15 +25,15 @@
       top: 0;
       left: 0;
       width: 100%;
-      height: 60px; /* Altura del header */
+      height: 60px; /* altura del header */
       background-color: #fff;
       border-bottom: 1px solid #000;
       display: flex;
       align-items: center;
       justify-content: center; /* Centra logo + título */
       z-index: 100;
-      padding: 0 20px;
       box-sizing: border-box;
+      padding: 0 20px;
     }
     .menu-toggle {
       position: absolute;
@@ -84,7 +83,6 @@
     .menu-links a:hover {
       color: #ccc;
     }
-    /* ---------------------------------- */
 
     /* Grid de productos en promoción */
     .productos-grid {
@@ -140,7 +138,74 @@
       z-index: 10;
     }
 
-    /* Botón “Ver detalles / Añadir al carrito” */
+    /* Botones Eliminar / Editar (solo Admin) */
+    .btn-eliminar,
+    .btn-editar {
+      position: absolute;
+      top: 8px;
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: none; /* se mostrarán solo en modo Admin */
+      z-index: 50;
+    }
+    .btn-eliminar {
+      right: 8px;
+      color: #c00;
+    }
+    .btn-editar {
+      left: 8px;
+      color: #00c;
+    }
+
+    /* Formulario Admin (creación/edición de promoción) */
+    .admin-form {
+      display: none; /* invisible por defecto */
+      margin: 0 auto 30px auto;
+      max-width: 600px;
+      padding: 20px;
+      border: 2px solid #000;
+      background-color: #fff;
+      box-sizing: border-box;
+    }
+    .admin-form h3 {
+      margin-bottom: 15px;
+      font-size: 1.3rem;
+      text-align: center;
+    }
+    .admin-form input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #000;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    .admin-form button {
+      background-color: #000;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+
+    /* Botón Modo Admin */
+    #modoAdminBtn {
+      display: none; /* aparecerá solo con token válido */
+      margin: 20px auto;
+      padding: 10px 25px;
+      font-size: 1rem;
+      background: #000;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+
+    /* Botón “Añadir al carrito” / “Ver detalles” */
     .btn-carrito {
       margin-top: auto;
       background-color: #000;
@@ -167,7 +232,7 @@
       border-radius: 3px;
     }
 
-    /* Mensaje cuando no hay productos en promoción */
+    /* Mensaje cuando no hay promociones */
     .vacio {
       text-align: center;
       font-size: 1.2rem;
@@ -218,11 +283,33 @@
     </nav>
   </header>
 
+  <!-- ==============================
+       Botón “Modo Admin” (oculto por defecto)
+       ============================== -->
+  <button id="modoAdminBtn">Modo Admin</button>
+
+  <!-- ==============================
+       Formulario de alta/edición (solo Admin)
+       ============================== -->
+  <form class="admin-form" id="formPromo">
+    <h3 id="formTitulo">Agregar nueva promoción</h3>
+    <!-- ID oculto para editar (si está vacío, se interpreta como “nuevo”) -->
+    <input type="hidden" id="promoId" value="" />
+    <input type="text" id="nombre" placeholder="Nombre del producto en promoción" required />
+    <input type="text" id="descripcion" placeholder="Descripción (opcional)" />
+    <input type="text" id="tallas" placeholder="Tallas (ej: S, M, L)" />
+    <input type="text" id="colores" placeholder="Colores (ej: Rojo, Verde, Negro)" />
+    <input type="number" id="precio" placeholder="Precio original en pesos" required />
+    <input type="number" id="promo" placeholder="Descuento % (ej: 20)" required />
+    <input type="file" id="imagenes" accept="image/*" multiple />
+    <button type="submit" id="submitBtn">Añadir promoción</button>
+  </form>
+
   <!-- ========================================
-       Grilla de productos en descuento
+       Grilla de productos en promoción
        ======================================== -->
   <div class="productos-grid" id="productosPromo">
-    <!-- Aquí el JS inyectará cada producto con descuento -->
+    <!-- Aquí el JS inyectará cada <div class="producto"> -->
   </div>
 
   <!-- Botón ir al carrito -->
@@ -234,131 +321,502 @@
     <p>Calidad, estilo y buen precio. Muy pronto más funciones y productos.</p>
   </footer>
 
-  <!-- ============================================================
-       SCRIPT: IndexedDB (varias categorías) + Renderizado de promociones
-       ============================================================ -->
+  <!-- =================================================================
+       SCRIPT: IndexedDB (“promociones”) + Renderizado + CRUD + Modo Admin
+       ================================================================= -->
   <script>
-    // Mostrar/ocultar menú hamburguesa
-    function toggleMenu() {
-      document.getElementById("menu").classList.toggle("show");
-    }
+    let db;
 
-    window.addEventListener('DOMContentLoaded', () => {
-      const contenedorPromo = document.getElementById("productosPromo");
+    window.addEventListener('DOMContentLoaded', function() {
+      // 1) Abrir (o crear) base IndexedDB “TALODB” versión 2
+      const request = indexedDB.open("TALODB", 2);
 
-      // Categorías en las que buscar productos con promo
-      const categorias = ['camisas', 'shorts', 'gorras', 'lociones'];
-      // Si existe un objectStore “promociones” propio, agregar aquí:
-      // categorias.push('promociones');
-
-      // Abrir (o crear) base IndexedDB
-      const requestDB = indexedDB.open("TALODB", 1);
-
-      requestDB.onupgradeneeded = function(event) {
-        const db = event.target.result;
-        // Asegurarse de que existan los objectStores para cada categoría
-        categorias.forEach(cat => {
-          if (!db.objectStoreNames.contains(cat)) {
-            db.createObjectStore(cat, { keyPath: "id", autoIncrement: true });
-          }
-        });
+      request.onupgradeneeded = function(event) {
+        db = event.target.result;
+        // Asegurarse de que exista el store “promociones”
+        if (!db.objectStoreNames.contains("promociones")) {
+          db.createObjectStore("promociones", { keyPath: "id", autoIncrement: true });
+        }
       };
 
-      requestDB.onsuccess = function(event) {
-        const db = event.target.result;
+      request.onsuccess = function(event) {
+        db = event.target.result;
+        renderizarPromociones();
 
-        // Para cada categoría, obtener todos los productos y filtrar por promo
-        const promesas = categorias.map(cat => {
-          return new Promise((resolve, reject) => {
-            const tx = db.transaction(cat, "readonly");
-            const store = tx.objectStore(cat);
-            const getAllReq = store.getAll();
+        // Si existe token Admin válido, mostrar interfaz Admin
+        if (tieneTokenValido()) {
+          habilitarModoAdminInterfaz();
+        }
+      };
 
-            getAllReq.onsuccess = function(evt) {
-              const items = evt.target.result || [];
-              // Filtrar solo los que tengan promo válida
-              const conDescuento = items.filter(p => p.promo && !isNaN(parseInt(p.promo)));
-              // Anotar la categoría para construir enlaces
-              conDescuento.forEach(p => p.categoria = cat);
-              resolve(conDescuento);
-            };
+      request.onerror = function(event) {
+        console.error("Error abriendo IndexedDB v2:", event.target.errorCode);
+        alert("No se pudo abrir la base de datos. Algunas funciones no estarán disponibles.");
+      };
 
-            getAllReq.onerror = function(err) {
-              console.error(`Error leyendo productos de ${cat}:`, err);
-              resolve([]); // Resolver con lista vacía en caso de error
-            };
-          });
-        });
+      // 2) Mostrar/ocultar menú hamburguesa
+      function toggleMenu() {
+        document.getElementById("menu").classList.toggle("show");
+      }
+      window.toggleMenu = toggleMenu;
 
-        Promise.all(promesas).then(arrays => {
-          // “arrays” es un arreglo de arreglos; aplanar
-          const productosPromo = arrays.flat();
+      // Referencias a elementos
+      const btnAdmin    = document.getElementById('modoAdminBtn');
+      const form        = document.getElementById('formPromo');
+      const contPromos  = document.getElementById('productosPromo');
+      const formTitulo  = document.getElementById('formTitulo');
+      const submitBtn   = document.getElementById('submitBtn');
+      const inputImgs   = document.getElementById('imagenes');
 
-          if (productosPromo.length === 0) {
-            // Si no hay productos con descuento
-            contenedorPromo.innerHTML = `<p class="vacio">No hay productos en promoción por el momento.</p>`;
-            return;
-          }
+      // 3) Al hacer clic en “Modo Admin”
+      btnAdmin.addEventListener('click', () => {
+        if (!tieneTokenValido()) {
+          alert("🚫 Debes iniciar sesión como Admin.");
+          return;
+        }
+        // Alternar visibilidad del formulario
+        if (form.style.display === 'block') {
+          form.style.display = 'none';
+        } else {
+          abrirFormularioParaAgregar();
+          form.style.display = 'block';
+        }
+      });
 
-          // Renderizar cada producto en promoción
-          productosPromo.forEach(prod => {
-            // Calcular precio original y precio final
-            const precioOriginal = prod.precio;
-            const descuento = parseInt(prod.promo);
-            const precioFinal = Math.round(precioOriginal * (1 - descuento / 100));
+      // 4) Funciones para abrir formulario en modo “Agregar” o “Editar”
+      function abrirFormularioParaAgregar() {
+        formTitulo.textContent = "Agregar nueva promoción";
+        submitBtn.textContent  = "Añadir promoción";
+        document.getElementById('promoId').value = "";
+        form.reset();
+        inputImgs.required = true; // en alta, requerimos imagen
+      }
 
-            // Contenedor del producto
+      function abrirFormularioParaEditar(promo) {
+        formTitulo.textContent = "Editar promoción";
+        submitBtn.textContent  = "Guardar cambios";
+        document.getElementById('promoId').value = promo.id;
+        document.getElementById('nombre').value      = promo.nombre;
+        document.getElementById('descripcion').value = promo.descripcion || "";
+        document.getElementById('tallas').value      = promo.tallas || "";
+        document.getElementById('colores').value     = promo.colores || "";
+        document.getElementById('precio').value      = promo.precio;
+        document.getElementById('promo').value       = promo.promo;
+        inputImgs.required = false; // en edición, no obligamos a cambiar imagen
+      }
+
+      // 5) Renderizar todas las promociones desde IndexedDB
+      function renderizarPromociones() {
+        contPromos.innerHTML = '';
+        if (!db) return;
+
+        const tx    = db.transaction("promociones", "readonly");
+        const store = tx.objectStore("promociones");
+
+        store.openCursor().onsuccess = function(event) {
+          const cursor = event.target.result;
+          if (cursor) {
+            const pr = cursor.value;
+            const id = pr.id;
+
+            // Calcular precio y descuento
+            const descuento      = parseInt(pr.promo);
+            const precioOriginal = pr.precio;
+            const precioFinal    = Math.round(precioOriginal * (1 - descuento / 100));
+
+            // Crear tarjeta de producto en promoción
             const div = document.createElement('div');
             div.className = 'producto';
 
-            // Etiqueta de descuento (“-XX%”)
+            // Badge de descuento
             const badge = document.createElement('div');
             badge.className = 'descuento-badge';
             badge.textContent = `-${descuento}%`;
             div.appendChild(badge);
 
-            // Imagen principal clickeable a detalle
-            const enlace = document.createElement('a');
-            enlace.href = `detalle.html?categoria=${prod.categoria}&id=${prod.id}`;
-            enlace.target = '_blank';
+            // Botón Eliminar (✖) – solo en modo Admin
+            const btnDel = document.createElement('button');
+            btnDel.className = 'btn-eliminar hidden';
+            btnDel.innerHTML = '✖';
+            btnDel.title = "Eliminar promoción";
+            btnDel.onclick = () => {
+              if (!tieneTokenValido()) {
+                alert("Solo Admin puede eliminar.");
+                return;
+              }
+              eliminarPromocion(id);
+            };
+            div.appendChild(btnDel);
+
+            // Botón Editar (✎) – solo en modo Admin
+            const btnEd = document.createElement('button');
+            btnEd.className = 'btn-editar hidden';
+            btnEd.innerHTML = '✎';
+            btnEd.title = "Editar promoción";
+            btnEd.onclick = () => {
+              if (!tieneTokenValido()) {
+                alert("Solo Admin puede editar.");
+                return;
+              }
+              cargarPromoParaEditar(id);
+            };
+            div.appendChild(btnEd);
+
+            // Imagen
             const img = document.createElement('img');
-            img.src = (prod.imagenes && prod.imagenes[0]) || '';
-            img.alt = prod.nombre;
-            enlace.appendChild(img);
-            div.appendChild(enlace);
+            img.src = (pr.imagenes && pr.imagenes[0]) || '';
+            img.alt = pr.nombre;
+            div.appendChild(img);
 
             // Nombre
             const h3 = document.createElement('h3');
-            h3.textContent = prod.nombre;
+            h3.textContent = pr.nombre;
             div.appendChild(h3);
 
-            // Precio: mostrar precio final y precio original tachado
+            // Descripción (si existe)
+            if (pr.descripcion) {
+              const pDesc = document.createElement('p');
+              pDesc.textContent = pr.descripcion;
+              div.appendChild(pDesc);
+            }
+
+            // Precio y precio original tachado
             const pPrecio = document.createElement('p');
             pPrecio.innerHTML = `<span style="font-size: 1.1rem; font-weight: bold;">$${precioFinal.toLocaleString()}</span>
-                                 <span style="text-decoration: line-through; color: gray; margin-left: 6px;">
-                                   $${precioOriginal.toLocaleString()}
-                                 </span>`;
+                                 <span style="text-decoration: line-through; color: gray; margin-left: 6px;">$${precioOriginal.toLocaleString()}</span>`;
             div.appendChild(pPrecio);
 
-            // Botón “Ver detalles / Añadir al carrito”
+            // Paleta de colores
+            const pColores = document.createElement('p');
+            pColores.textContent = "Colores:";
+            div.appendChild(pColores);
+
+            const palette = document.createElement('div');
+            palette.className = 'color-palette';
+            let coloresArr = [];
+            if (pr.colores && typeof pr.colores === 'string') {
+              coloresArr = pr.colores.split(',').map(c => c.trim().toLowerCase());
+            }
+            const dictCols = {
+              rojo: "red", verde: "green", azul: "blue", negro: "black",
+              blanco: "white", amarillo: "yellow", naranja: "orange", morado: "purple",
+              rosado: "pink", gris: "gray", marron: "brown", cian: "cyan", fucsia: "magenta"
+            };
+            if (coloresArr.length > 0) {
+              coloresArr.forEach(color => {
+                const circle = document.createElement('span');
+                circle.className = 'color-circle';
+                if (dictCols[color]) {
+                  circle.style.backgroundColor = dictCols[color];
+                } else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(color)) {
+                  circle.style.backgroundColor = color;
+                } else {
+                  circle.style.backgroundColor = "#fff";
+                }
+                palette.appendChild(circle);
+              });
+            } else {
+              const circle = document.createElement('span');
+              circle.className = 'color-circle';
+              circle.style.backgroundColor = "#fff";
+              palette.appendChild(circle);
+            }
+            div.appendChild(palette);
+
+            // Botón “Ver detalles”
             const btnCar = document.createElement('button');
             btnCar.className = 'btn-carrito';
             btnCar.textContent = 'Ver detalles';
-            btnCar.onclick = () => {
-              window.open(`detalle.html?categoria=${prod.categoria}&id=${prod.id}`, "_blank");
-            };
+            btnCar.onclick = () => irADetalle(id);
             div.appendChild(btnCar);
 
-            contenedorPromo.appendChild(div);
-          });
-        });
-      };
+            contPromos.appendChild(div);
+            cursor.continue();
+          }
+        };
 
-      requestDB.onerror = function(event) {
-        console.error("Error abriendo IndexedDB en promocion.html:", event.target.errorCode);
-        contenedorPromo.innerHTML = `<p class="vacio">No se pudo cargar las promociones.</p>`;
-      };
+        store.openCursor().onerror = function(event) {
+          console.error("Error al iterar promociones:", event.target.error);
+        };
+
+        // Si estamos en modo Admin, mostrar botones ocultos
+        if (tieneTokenValido()) {
+          habilitarModoAdminInterfaz();
+        }
+      }
+
+      // Función para abrir la vista detalle si la hubiera
+      function irADetalle(id) {
+        window.open(`detalle.html?categoria=promociones&id=${id}`, "_blank");
+      }
+
+      // 6) Eliminar promoción (solo Admin)
+      function eliminarPromocion(id) {
+        if (!tieneTokenValido()) return;
+        if (!db) return;
+        if (!confirm("¿Seguro que deseas eliminar esta promoción?")) return;
+
+        const tx = db.transaction("promociones", "readwrite");
+        const store = tx.objectStore("promociones");
+        const reqDel = store.delete(id);
+        reqDel.onsuccess = () => renderizarPromociones();
+        reqDel.onerror = err => {
+          console.error("Error al eliminar promoción:", err);
+          alert("No se pudo eliminar la promoción.");
+        };
+      }
+
+      // 7) Cargar promoción en el formulario para editar (solo Admin)
+      function cargarPromoParaEditar(id) {
+        if (!tieneTokenValido() || !db) return;
+        const tx    = db.transaction("promociones", "readonly");
+        const store = tx.objectStore("promociones");
+        store.get(id).onsuccess = evt => {
+          const promo = evt.target.result;
+          if (!promo) {
+            alert("Promoción no encontrada.");
+            return;
+          }
+          abrirFormularioParaEditar(promo);
+          form.style.display = 'block';
+        };
+        store.get(id).onerror = err => {
+          console.error("Error al obtener promoción para editar:", err);
+        };
+      }
+
+      // 8) Manejo del formulario (submit): alta o edición
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+
+        if (!tieneTokenValido()) {
+          alert("🚫 Debes iniciar sesión como Admin para guardar cambios.");
+          return;
+        }
+        if (!db) {
+          alert("La base de datos no está lista.");
+          return;
+        }
+
+        const idEd = document.getElementById('promoId').value;
+        let imgsArr = [];
+        const files  = inputImgs.files;
+
+        if (!idEd) {
+          // Modo Crear: requerimos al menos 1 imagen
+          if (!files || files.length === 0) {
+            alert("Debes seleccionar al menos una imagen.");
+            return;
+          }
+          // Convertir a Base64
+          try {
+            const promImgs = Array.from(files).map(file => {
+              return new Promise((resolve, reject) => {
+                if (!file.type.startsWith("image/")) {
+                  reject(new Error(`"${file.name}" no es una imagen.`));
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error(`Error leyendo "${file.name}".`));
+                reader.readAsDataURL(file);
+              });
+            });
+            const results = await Promise.allSettled(promImgs);
+            imgsArr = results
+              .filter(r => r.status === "fulfilled")
+              .map(r => r.value);
+            if (imgsArr.length === 0) {
+              alert("No se pudo procesar ninguna imagen válida.");
+              return;
+            }
+          } catch (err) {
+            console.error("Error al procesar imágenes:", err);
+            alert("Error inesperado al procesar las imágenes.");
+            return;
+          }
+        }
+
+        // Leer campos
+        const nombre      = document.getElementById('nombre').value;
+        const descripcion = document.getElementById('descripcion').value;
+        const tallas      = document.getElementById('tallas').value;
+        const colores     = document.getElementById('colores').value;
+        const precio      = parseInt(document.getElementById('precio').value);
+        const promoPct    = parseInt(document.getElementById('promo').value);
+
+        if (!nombre || isNaN(precio) || isNaN(promoPct)) {
+          alert("Nombre, precio y descuento son obligatorios.");
+          return;
+        }
+
+        if (idEd) {
+          // Modo Editar
+          const idNum = parseInt(idEd);
+          const txE   = db.transaction("promociones", "readwrite");
+          const storeE = txE.objectStore("promociones");
+          storeE.get(idNum).onsuccess = evt => {
+            const orig = evt.target.result;
+            if (!orig) {
+              alert("No se encontró la promoción original.");
+              return;
+            }
+            const nuevasImgs = imgsArr.length > 0 ? imgsArr : orig.imagenes;
+            const updated = {
+              id:           idNum,
+              nombre,
+              descripcion,
+              tallas,
+              colores,
+              precio,
+              promo:        promoPct,
+              imagenes:     nuevasImgs
+            };
+            storeE.put(updated).onsuccess = () => {
+              alert("Promoción actualizada correctamente.");
+              form.reset();
+              form.style.display = 'none';
+              renderizarPromociones();
+            };
+            storeE.put(updated).onerror = err => {
+              console.error("Error al actualizar promoción:", err);
+              alert("No se pudo actualizar la promoción.");
+            };
+          };
+          storeE.get(idNum).onerror = err => {
+            console.error("Error al obtener promoción para edición:", err);
+          };
+        } else {
+          // Modo Crear
+          const nuevaPromo = {
+            nombre,
+            descripcion,
+            tallas,
+            colores,
+            precio,
+            promo:    promoPct,
+            imagenes: imgsArr
+          };
+          const txN = db.transaction("promociones", "readwrite");
+          const storeN = txN.objectStore("promociones");
+          storeN.add(nuevaPromo).onsuccess = () => {
+            alert("Promoción agregada.");
+            form.reset();
+            form.style.display = 'none';
+            renderizarPromociones();
+          };
+          storeN.add(nuevaPromo).onerror = err => {
+            console.error("Error al agregar promoción:", err);
+            alert("No se pudo agregar la promoción.");
+          };
+        }
+      });
+
+      // 9) Mostrar todos los elementos de Admin (botones ocultos y formulario)
+      function habilitarModoAdminInterfaz() {
+        document.getElementById('modoAdminBtn').classList.remove('hidden');
+        document.querySelectorAll('.btn-eliminar, .btn-editar').forEach(el => {
+          el.classList.remove('hidden');
+        });
+      }
     });
+
+    // ==============================
+    // MODO ADMIN: login a /login con JWT
+    // ==============================
+    window.addEventListener('DOMContentLoaded', () => {
+      // Capturar Ctrl+Shift+A para prompt de login
+      if (!('ontouchstart' in window)) {
+        window.addEventListener('keydown', async (e) => {
+          if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+            e.preventDefault();
+            await iniciarSesionAdmin();
+          }
+        });
+      }
+      // Si ya hay token válido, habilitar Admin
+      if (tieneTokenValido()) {
+        habilitarModoAdmin();
+      }
+    });
+
+    async function iniciarSesionAdmin() {
+      const username = prompt("👉 Ingrese Usuario (modo Admin):", "");
+      if (!username) return;
+      const password = prompt("👉 Ingrese Contraseña (modo Admin):", "");
+      if (!password) return;
+
+      try {
+        const resp = await fetch(`https://taloadmin-backend.onrender.com/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        if (resp.status === 200) {
+          const data = await resp.json();
+          localStorage.setItem('admin_jwt', data.token);
+          alert("✔️ Sesión Admin iniciada correctamente.");
+          habilitarModoAdmin();
+        } else {
+          const err = await resp.json();
+          alert(`❌ ${err.error || 'Credenciales inválidas.'}`);
+        }
+      } catch (error) {
+        console.error("Error al conectar con backend:", error);
+        alert("⚠️ Error al contactar al servidor de autenticación.");
+      }
+    }
+
+    function tieneTokenValido() {
+      const token = localStorage.getItem('admin_jwt');
+      if (!token) return false;
+      try {
+        const payloadBase64 = token.split('.')[1];
+        const decoded = JSON.parse(atob(payloadBase64));
+        const ahora = Math.floor(Date.now() / 1000);
+        return decoded.exp && decoded.exp > ahora;
+      } catch {
+        return false;
+      }
+    }
+
+    function habilitarModoAdmin() {
+      document.body.classList.add("admin-activo");
+      document.getElementById('modoAdminBtn').classList.remove('hidden');
+      document.querySelectorAll('.btn-eliminar, .btn-editar').forEach(el => {
+        el.classList.remove('hidden');
+      });
+      document.querySelectorAll('.admin-form').forEach(f => {
+        f.style.display = 'none'; // invisible hasta que se pulse Modo Admin
+      });
+      // Banner de Modo Admin Activo
+      if (!document.getElementById("bannerAdmin")) {
+        const banner = document.createElement("div");
+        banner.id = "bannerAdmin";
+        banner.innerHTML = "🔒 Modo Admin Activo";
+        banner.style.position = "fixed";
+        banner.style.bottom = "10px";
+        banner.style.right = "10px";
+        banner.style.background = "#000";
+        banner.style.color = "#fff";
+        banner.style.padding = "8px 12px";
+        banner.style.zIndex = "2000";
+        banner.style.borderRadius = "4px";
+        document.body.appendChild(banner);
+      }
+    }
+
+    function cerrarSesionAdmin() {
+      localStorage.removeItem('admin_jwt');
+      document.body.classList.remove("admin-activo");
+      document.getElementById('modoAdminBtn').classList.add('hidden');
+      document.querySelectorAll('.btn-eliminar, .btn-editar').forEach(el => {
+        el.classList.add('hidden');
+      });
+      const banner = document.getElementById("bannerAdmin");
+      if (banner) banner.remove();
+      alert("🔒 Sesión Admin cerrada.");
+    }
   </script>
 </body>
 </html>
