@@ -324,32 +324,72 @@
   </footer>
 
   <!-- =================================================================
-       SCRIPT: Fetch al backend (Lociones) + CRUD + Modo Admin
+       SCRIPT: IndexedDB (“lociones”) + Renderizado + CRUD + Modo Admin
        ================================================================= -->
   <script>
-    const BACKEND_URL = "https://taloadmin-backend.onrender.com";
+    let db;
 
-    document.addEventListener('DOMContentLoaded', () => {
-      // 1) Cargar y renderizar todos los lociones
-      cargarYRenderizarProductos();
+    window.addEventListener('DOMContentLoaded', function() {
+      // 1) Abrir (o crear) base IndexedDB “TALODB” versión 2
+      const request = indexedDB.open("TALODB", 2);
 
-      // 2) Si ya existe token Admin válido, mostrar interfaz Admin
-      if (tieneTokenValido()) {
-        habilitarModoAdminInterfaz();
-      }
+      request.onupgradeneeded = function(event) {
+        db = event.target.result;
 
-      // 3) Mostrar/ocultar menú hamburguesa
-      window.toggleMenu = () => {
-        document.getElementById("menu").classList.toggle("show");
+        // Crear, si no existen, todas las stores: camisas, shorts, gorras, lociones y promociones
+        if (!db.objectStoreNames.contains("camisas")) {
+          db.createObjectStore("camisas", { keyPath: "id", autoIncrement: true });
+        }
+        if (!db.objectStoreNames.contains("shorts")) {
+          db.createObjectStore("shorts", { keyPath: "id", autoIncrement: true });
+        }
+        if (!db.objectStoreNames.contains("gorras")) {
+          db.createObjectStore("gorras", { keyPath: "id", autoIncrement: true });
+        }
+        if (!db.objectStoreNames.contains("lociones")) {
+          db.createObjectStore("lociones", { keyPath: "id", autoIncrement: true });
+        }
+        if (!db.objectStoreNames.contains("promociones")) {
+          db.createObjectStore("promociones", { keyPath: "id", autoIncrement: true });
+        }
       };
 
-      // 4) Al hacer clic en “Modo Admin”
-      document.getElementById('modoAdminBtn').addEventListener('click', () => {
+      request.onsuccess = function(event) {
+        db = event.target.result;
+        renderizarProductos();
+
+        // Si existe token Admin válido, mostrar interfaz Admin
+        if (tieneTokenValido()) {
+          habilitarModoAdminInterfaz();
+        }
+      };
+
+      request.onerror = function(event) {
+        console.error("Error abriendo IndexedDB:", event.target.errorCode);
+        alert("No se pudo abrir la base de datos. Algunas funciones no estarán disponibles.");
+      };
+
+      // 2) Mostrar/ocultar menú hamburguesa
+      function toggleMenu() {
+        document.getElementById("menu").classList.toggle("show");
+      }
+      window.toggleMenu = toggleMenu;
+
+      // Referencias a elementos del DOM
+      const btnAdmin      = document.getElementById('modoAdminBtn');
+      const form          = document.getElementById('formProducto');
+      const productosDiv  = document.getElementById('productos');
+      const formTitulo    = form.querySelector('h3');
+      const submitBtn     = document.getElementById('submitBtn');
+      const inputImagenes = document.getElementById('imagenes');
+
+      // 3) Al hacer clic en “Modo Admin”
+      btnAdmin.addEventListener('click', () => {
         if (!tieneTokenValido()) {
           alert("🚫 Debes iniciar sesión como Admin.");
           return;
         }
-        const form = document.getElementById('formProducto');
+        // Alternar visibilidad del formulario
         if (form.style.display === 'block') {
           form.style.display = 'none';
         } else {
@@ -358,33 +398,270 @@
         }
       });
 
-      // 5) Manejo del formulario de Crear/Editar
-      document.getElementById('formProducto').addEventListener('submit', async (e) => {
+      // 4) Funciones para abrir formulario en modo “Agregar” o “Editar”
+      function abrirFormularioParaAgregar() {
+        formTitulo.textContent  = "Agregar nuevo producto (Lociones)";
+        submitBtn.textContent   = "Añadir al catálogo";
+        document.getElementById('productoId').value = "";
+        form.reset();
+        inputImagenes.required = true; // En alta, se requieren imágenes
+      }
+
+      function abrirFormularioParaEditar(producto) {
+        formTitulo.textContent  = "Editar producto (Lociones)";
+        submitBtn.textContent   = "Guardar cambios";
+        document.getElementById('productoId').value  = producto.id;
+        document.getElementById('nombre').value       = producto.nombre;
+        document.getElementById('descripcion').value  = producto.descripcion || "";
+        document.getElementById('tallas').value       = producto.tallas || "";
+        document.getElementById('colores').value      = producto.colores || "";
+        document.getElementById('precio').value       = producto.precio;
+        document.getElementById('promo').value        = producto.promo || "";
+        inputImagenes.required = false; // En edición, no obligamos a cambiar imagen
+      }
+
+      // 5) Renderizar todos los “lociones” desde IndexedDB
+      function renderizarProductos() {
+        productosDiv.innerHTML = '';
+        if (!db) return;
+
+        const tx    = db.transaction("lociones", "readonly");
+        const store = tx.objectStore("lociones");
+
+        store.openCursor().onsuccess = function(event) {
+          const cursor = event.target.result;
+          if (cursor) {
+            const prod = cursor.value;
+            const id   = prod.id;
+
+            // Calcular precio y descuento
+            const tieneDescuento  = prod.promo && !isNaN(parseInt(prod.promo));
+            const descuento       = tieneDescuento ? parseInt(prod.promo) : 0;
+            const precioOriginal  = prod.precio;
+            const precioFinal     = tieneDescuento
+                                    ? Math.round(precioOriginal * (1 - descuento / 100))
+                                    : precioOriginal;
+
+            // Crear tarjeta de producto
+            const div = document.createElement('div');
+            div.className = 'producto';
+
+            // Botón Eliminar (✖) – visible solo en modo Admin
+            const btnDel = document.createElement('button');
+            btnDel.className = 'btn-eliminar hidden';
+            btnDel.setAttribute('data-admin', 'solo');
+            btnDel.innerHTML = '✖';
+            btnDel.title = "Eliminar producto";
+            btnDel.onclick = () => {
+              if (!tieneTokenValido()) {
+                alert("Solo Admin puede eliminar.");
+                return;
+              }
+              eliminarProducto(id);
+            };
+            div.appendChild(btnDel);
+
+            // Botón Editar (✎) – visible solo en modo Admin
+            const btnEd = document.createElement('button');
+            btnEd.className = 'btn-editar hidden';
+            btnEd.setAttribute('data-admin', 'solo');
+            btnEd.innerHTML = '✎';
+            btnEd.title = "Editar producto";
+            btnEd.onclick = () => {
+              if (!tieneTokenValido()) {
+                alert("Solo Admin puede editar.");
+                return;
+              }
+              cargarProductoParaEditar(id);
+            };
+            div.appendChild(btnEd);
+
+            // Imagen clickeable a detalle.html (categoría=lociones)
+            const enlace = document.createElement('a');
+            enlace.href   = `detalle.html?categoria=lociones&id=${id}`;
+            enlace.target = '_blank';
+            const img = document.createElement('img');
+            img.src       = (prod.imagenes && prod.imagenes[0]) || '';
+            img.alt       = prod.nombre;
+            enlace.appendChild(img);
+            div.appendChild(enlace);
+
+            // Nombre del producto
+            const h3 = document.createElement('h3');
+            h3.textContent = prod.nombre;
+            div.appendChild(h3);
+
+            // Descripción (si existe)
+            if (prod.descripcion) {
+              const pDesc = document.createElement('p');
+              pDesc.textContent = prod.descripcion;
+              div.appendChild(pDesc);
+            }
+
+            // Precio y descuento
+            const pPrecio = document.createElement('p');
+            pPrecio.innerHTML = `<span style="font-size: 1.1rem; font-weight: bold;">$${precioFinal.toLocaleString()}</span>`;
+            if (tieneDescuento) {
+              pPrecio.innerHTML += `
+                <span style="text-decoration: line-through; color: gray; margin-left: 6px;">
+                  $${precioOriginal.toLocaleString()}
+                </span>
+                <span style="background: #000; color: #fff; padding: 2px 6px; font-size: 0.85rem; margin-left: 6px;">
+                  -${descuento}%
+                </span>`;
+            }
+            div.appendChild(pPrecio);
+
+            // ---------------------- COLORES ----------------------
+            const pColores = document.createElement('p');
+            pColores.textContent = "Colores:";
+            div.appendChild(pColores);
+
+            const palette = document.createElement('div');
+            palette.className = 'color-palette';
+
+            if (prod.colores && prod.colores.trim() !== "") {
+              // Separamos cadenas por comas, quitamos espacios y a minúsculas
+              const arrayDeColores = prod.colores
+                                      .split(',')
+                                      .map(c => c.trim().toLowerCase());
+              // Diccionario español → CSS
+              const diccionarioColores = {
+                rojo:    "red",
+                verde:   "green",
+                azul:    "blue",
+                negro:   "black",
+                blanco:  "white",
+                amarillo:"yellow",
+                naranja: "orange",
+                morado:  "purple",
+                rosado:  "pink",
+                gris:    "gray",
+                marron:  "brown",
+                cian:    "cyan",
+                fucsia:  "magenta"
+              };
+
+              arrayDeColores.forEach(colorNombre => {
+                const circle = document.createElement('span');
+                circle.className = 'color-circle';
+
+                // 1) Si está en el diccionario, lo usamos:
+                if (diccionarioColores[colorNombre]) {
+                  circle.style.backgroundColor = diccionarioColores[colorNombre];
+                }
+                // 2) Si es código hex válido (#FFF o #AABBCC), lo usamos:
+                else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorNombre)) {
+                  circle.style.backgroundColor = colorNombre;
+                }
+                // 3) Si no se reconoce, dejamos blanco
+                else {
+                  circle.style.backgroundColor = "#fff";
+                }
+                palette.appendChild(circle);
+              });
+            } else {
+              // Si no hay colores, un círculo blanco genérico
+              const circle = document.createElement('span');
+              circle.className = 'color-circle';
+              circle.style.backgroundColor = "#fff";
+              palette.appendChild(circle);
+            }
+
+            div.appendChild(palette);
+            // ------------------------------------------------------
+
+            // Botón “Añadir al carrito”
+            const btnCar = document.createElement('button');
+            btnCar.className = 'btn-carrito';
+            btnCar.textContent = 'Añadir al carrito';
+            btnCar.onclick = () => irADetalle(id);
+            div.appendChild(btnCar);
+
+            productosDiv.appendChild(div);
+            cursor.continue();
+          }
+        };
+
+        store.openCursor().onerror = function(event) {
+          console.error("Error al iterar productos:", event.target.error);
+        };
+
+        // Si estamos en modo Admin, mostrar elementos data-admin="solo"
+        if (tieneTokenValido()) {
+          habilitarModoAdminInterfaz();
+        }
+      }
+
+      // Función que abre la ventana detalle.html para el producto
+      window.irADetalle = function(id) {
+        const url = `detalle.html?categoria=lociones&id=${id}`;
+        window.open(url, "_blank");
+      };
+
+      // 6) Eliminar producto (solo Admin)
+      window.eliminarProducto = function(id) {
+        if (!tieneTokenValido()) return;
+        if (!db) return;
+        if (!confirm("¿Seguro que deseas eliminar este producto?")) return;
+
+        const tx    = db.transaction("lociones", "readwrite");
+        const store = tx.objectStore("lociones");
+        const deleteReq = store.delete(id);
+        deleteReq.onsuccess = function() {
+          renderizarProductos();
+        };
+        deleteReq.onerror = function(event) {
+          console.error("Error al eliminar producto con id " + id, event.target.error);
+        };
+      };
+
+      // 7) Cargar producto en el formulario para editar (solo Admin)
+      function cargarProductoParaEditar(id) {
+        if (!tieneTokenValido()) return;
+        if (!db) return;
+
+        const tx    = db.transaction("lociones", "readonly");
+        const store = tx.objectStore("lociones");
+        store.get(id).onsuccess = function(evt) {
+          const producto = evt.target.result;
+          if (!producto) {
+            alert("Producto no encontrado.");
+            return;
+          }
+          abrirFormularioParaEditar(producto);
+          form.style.display = 'block';
+        };
+        store.get(id).onerror = function(event) {
+          console.error("Error al obtener producto para editar:", event.target.error);
+        };
+      }
+
+      // 8) Manejo del formulario (submit): alta o edición
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // Verificamos que el Admin esté logueado mediante JWT válido
         if (!tieneTokenValido()) {
           alert("🚫 Debes iniciar sesión como Admin para guardar cambios.");
           return;
         }
+        if (!db) {
+          alert("La base de datos no está lista.");
+          return;
+        }
 
-        const prodId = document.getElementById('productoId').value;
-        const nombre = document.getElementById('nombre').value.trim();
-        const descripcion = document.getElementById('descripcion').value.trim();
-        const tallas = document.getElementById('tallas').value.trim();
-        const colores = document.getElementById('colores').value.trim();
-        const precio = parseInt(document.getElementById('precio').value);
-        const promo = document.getElementById('promo').value.trim();
-
-        // Convertir archivos a Base64 si hay nuevos
+        const idEdicion = document.getElementById('productoId').value;
         let imagenesArray = [];
-        const archivos = document.getElementById('imagenes').files;
-        if (!prodId) {
-          // Crear nuevo requiere al menos 1 imagen
+        const archivos = inputImagenes.files;
+
+        if (!idEdicion) {
+          // MODO CREAR NUEVO: requerimos al menos 1 imagen
           if (!archivos || archivos.length === 0) {
             alert("Debes seleccionar al menos una imagen.");
             return;
           }
-        }
-        if (archivos && archivos.length > 0) {
+          // Convertir archivos a Base64
           try {
             const promesas = Array.from(archivos).map(file => {
               return new Promise((resolve, reject) => {
@@ -398,13 +675,16 @@
                 reader.readAsDataURL(file);
               });
             });
+
             const resultados = await Promise.allSettled(promesas);
-            const exitosos = resultados.filter(r => r.status === "fulfilled").map(r => r.value);
-            if (exitosos.length === 0 && !prodId) {
+            imagenesArray = resultados
+              .filter(r => r.status === "fulfilled")
+              .map(r => r.value);
+
+            if (imagenesArray.length === 0) {
               alert("No se pudo procesar ninguna imagen válida.");
               return;
             }
-            imagenesArray = exitosos;
           } catch (err) {
             console.error("Error al procesar imágenes:", err);
             alert("Error inesperado al procesar las imágenes.");
@@ -412,267 +692,123 @@
           }
         }
 
+        // Leemos los demás campos
+        const nombre      = document.getElementById('nombre').value;
+        const descripcion = document.getElementById('descripcion').value;
+        const tallas      = document.getElementById('tallas').value;
+        const colores     = document.getElementById('colores').value;
+        const precio      = parseInt(document.getElementById('precio').value);
+        const promo       = document.getElementById('promo').value;
+
         if (!nombre || isNaN(precio)) {
           alert("Nombre y precio son obligatorios.");
           return;
         }
 
-        try {
-          const token = localStorage.getItem('admin_jwt');
-          let url = `${BACKEND_URL}/api/products`;
-          let method = 'POST';
+        if (idEdicion) {
+          // -------- MODO EDICIÓN --------
+          const idNum = parseInt(idEdicion);
+          const txE   = db.transaction("lociones", "readwrite");
+          const storeE = txE.objectStore("lociones");
 
-          if (prodId) {
-            url = `${BACKEND_URL}/api/products/${prodId}`;
-            method = 'PUT';
-          }
+          // Primero obtenemos el producto original para conservar sus imágenes si no se cambian
+          storeE.get(idNum).onsuccess = function(evt) {
+            const orig = evt.target.result;
+            if (!orig) {
+              alert("El producto original no se encontró.");
+              return;
+            }
+            // Si el usuario no sube nuevas imágenes, conservamos las antiguas
+            const nuevasImagenes = imagenesArray.length > 0 ? imagenesArray : orig.imagenes;
 
-          const resp = await fetch(url, {
-            method,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              nombre,
-              descripcion,
-              tallas,
-              colores,
-              precio,
-              promo,
-              imagenes: imagenesArray,
-              categoria: 'lociones'
-            })
-          });
-
-          const data = await resp.json();
-          if (!resp.ok) {
-            throw new Error(data.error || 'Error al guardar producto.');
-          }
-
-          alert(prodId 
-            ? "✅ Producto editado correctamente." 
-            : "✅ Producto agregado correctamente.");
-          document.getElementById('formProducto').reset();
-          document.getElementById('formProducto').style.display = 'none';
-          cargarYRenderizarProductos();
-        } catch (err) {
-          console.error(err);
-          alert("❌ " + err.message);
-        }
-      });
-    });
-
-    // Función para abrir el formulario en modo “Agregar”
-    function abrirFormularioParaAgregar() {
-      document.getElementById('formProducto').querySelector('h3').textContent = "Agregar nuevo producto (Lociones)";
-      document.getElementById('submitBtn').textContent = "Añadir al catálogo";
-      document.getElementById('productoId').value = "";
-      document.getElementById('formProducto').reset();
-      document.getElementById('imagenes').required = true;
-    }
-
-    // 1) Cargar y renderizar todos los productos “lociones” desde el backend
-    async function cargarYRenderizarProductos() {
-      try {
-        const resp = await fetch(`${BACKEND_URL}/api/products`);
-        const productos = await resp.json();
-        const grid = document.getElementById('productos');
-        grid.innerHTML = '';
-
-        productos.forEach(prod => {
-          // Solo mostrar aquellos cuya categoría sea "lociones"
-          if (prod.categoria !== 'lociones') return;
-
-          const div = document.createElement('div');
-          div.className = 'producto';
-
-          // Botón Eliminar (✖), visible solo en modo Admin
-          const btnDel = document.createElement('button');
-          btnDel.className = 'btn-eliminar';
-          btnDel.setAttribute('data-admin', 'solo');
-          btnDel.innerText = '✖';
-          btnDel.title = "Eliminar producto";
-          btnDel.onclick = () => eliminarProducto(prod._id);
-          div.appendChild(btnDel);
-
-          // Botón Editar (✎), visible solo en modo Admin
-          const btnEd = document.createElement('button');
-          btnEd.className = 'btn-editar';
-          btnEd.setAttribute('data-admin', 'solo');
-          btnEd.innerText = '✎';
-          btnEd.title = "Editar producto";
-          btnEd.onclick = () => abrirFormularioParaEditar(prod);
-          div.appendChild(btnEd);
-
-          // Imagen clickeable a detalle.html
-          const enlace = document.createElement('a');
-          enlace.href = `detalle.html?categoria=lociones&id=${prod._id}`;
-          enlace.target = '_blank';
-          const img = document.createElement('img');
-          img.src = (prod.imagenes && prod.imagenes.length > 0) 
-            ? prod.imagenes[0] 
-            : '';
-          img.alt = prod.nombre;
-          enlace.appendChild(img);
-          div.appendChild(enlace);
-
-          // Nombre del producto
-          const h3 = document.createElement('h3');
-          h3.textContent = prod.nombre;
-          div.appendChild(h3);
-
-          // Descripción (si existe)
-          if (prod.descripcion) {
-            const pDesc = document.createElement('p');
-            pDesc.textContent = prod.descripcion;
-            div.appendChild(pDesc);
-          }
-
-          // Precio y descuento
-          const tieneDescuento = prod.promo && !isNaN(parseInt(prod.promo));
-          const descuento = tieneDescuento ? parseInt(prod.promo) : 0;
-          const precioOriginal = prod.precio;
-          const precioFinal = tieneDescuento
-            ? Math.round(precioOriginal * (1 - descuento / 100))
-            : precioOriginal;
-
-          const pPrecio = document.createElement('p');
-          pPrecio.innerHTML = `<span style="font-size: 1.1rem; font-weight: bold;">$${precioFinal.toLocaleString()}</span>`;
-          if (tieneDescuento) {
-            pPrecio.innerHTML += `
-              <span style="text-decoration: line-through; color: gray; margin-left: 6px;">
-                $${precioOriginal.toLocaleString()}
-              </span>
-              <span style="background: #000; color: #fff; padding: 2px 6px; font-size: 0.85rem; margin-left: 6px;">
-                -${descuento}%</span>`;
-          }
-          div.appendChild(pPrecio);
-
-          // ---------------------- COLORES ----------------------
-          const pColores = document.createElement('p');
-          pColores.textContent = "Colores:";
-          div.appendChild(pColores);
-
-          const palette = document.createElement('div');
-          palette.className = 'color-palette';
-
-          if (prod.colores && prod.colores.trim() !== "") {
-            const arrayDeColores = prod.colores
-              .split(',')
-              .map(c => c.trim().toLowerCase());
-
-            const diccionarioColores = {
-              rojo:    "red",
-              verde:   "green",
-              azul:    "blue",
-              negro:   "black",
-              blanco:  "white",
-              amarillo:"yellow",
-              naranja: "orange",
-              morado:  "purple",
-              rosado:  "pink",
-              gris:    "gray",
-              marron:  "brown",
-              cian:    "cyan",
-              fucsia:  "magenta"
+            const updated = {
+              id:           idNum,
+              nombre:       nombre,
+              descripcion:  descripcion,
+              tallas:       tallas,
+              colores:      colores,
+              precio:       precio,
+              promo:        promo,
+              imagenes:     nuevasImagenes
             };
 
-            arrayDeColores.forEach(colorNombre => {
-              const circle = document.createElement('span');
-              circle.className = 'color-circle';
+            const putReq = storeE.put(updated);
+            putReq.onsuccess = function() {
+              alert("Producto actualizado correctamente.");
+              form.reset();
+              form.style.display = 'none';
+              renderizarProductos();
+            };
+            putReq.onerror = function(event) {
+              console.error("Error al actualizar producto:", event.target.error);
+              alert("No se pudo actualizar el producto.");
+            };
+          };
+          storeE.get(idNum).onerror = function(event) {
+            console.error("Error al obtener producto para edición:", event.target.error);
+          };
 
-              if (diccionarioColores[colorNombre]) {
-                circle.style.backgroundColor = diccionarioColores[colorNombre];
-              } else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorNombre)) {
-                circle.style.backgroundColor = colorNombre;
-              } else {
-                circle.style.backgroundColor = "#fff";
-              }
-              palette.appendChild(circle);
-            });
-          } else {
-            const circle = document.createElement('span');
-            circle.className = 'color-circle';
-            circle.style.backgroundColor = "#fff";
-            palette.appendChild(circle);
-          }
-          div.appendChild(palette);
-          // ------------------------------------------------------
+        } else {
+          // -------- MODO CREAR NUEVO --------
+          const nuevoProducto = {
+            nombre:       nombre,
+            descripcion:  descripcion,
+            tallas:       tallas,
+            colores:      colores,
+            precio:       precio,
+            promo:        promo,
+            imagenes:     imagenesArray
+          };
 
-          // Botón “Añadir al carrito”
-          const btnCar = document.createElement('button');
-          btnCar.className = 'btn-carrito';
-          btnCar.textContent = 'Añadir al carrito';
-          btnCar.onclick = () => irADetalle(prod._id);
-          div.appendChild(btnCar);
+          const txN    = db.transaction("lociones", "readwrite");
+          const storeN = txN.objectStore("lociones");
+          const addReq = storeN.add(nuevoProducto);
 
-          grid.appendChild(div);
-        });
-
-        // Si estamos en modo Admin, mostramos elementos data-admin="solo"
-        if (tieneTokenValido()) {
-          habilitarModoAdminInterfaz();
+          addReq.onsuccess = function() {
+            alert("Producto agregado al catálogo.");
+            form.reset();
+            form.style.display = 'none';
+            renderizarProductos();
+          };
+          addReq.onerror = function(event) {
+            console.error("Error al guardar producto:", event.target.error);
+            alert("No se pudo guardar el producto.");
+          };
         }
-      } catch (err) {
-        console.error('Error cargando productos:', err);
-        alert('No se pudieron cargar los productos desde el servidor.');
-      }
-    }
-
-    // 2) Abrir la página de detalle para “Añadir al carrito”
-    function irADetalle(id) {
-      const url = `detalle.html?categoria=lociones&id=${id}`;
-      window.open(url, "_blank");
-    }
-
-    // 3) Eliminar producto (solo Admin)
-    async function eliminarProducto(id) {
-      if (!tieneTokenValido()) return;
-      if (!confirm("¿Seguro que deseas eliminar este producto?")) return;
-
-      try {
-        const token = localStorage.getItem('admin_jwt');
-        const resp = await fetch(`${BACKEND_URL}/api/products/${id}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await resp.json();
-        if (!resp.ok) {
-          throw new Error(data.error || 'Error al eliminar');
-        }
-        cargarYRenderizarProductos();
-      } catch (err) {
-        console.error('Error al eliminar producto:', err);
-        alert('No se pudo eliminar el producto.');
-      }
-    }
-
-    // 4) Cargar producto en el formulario para editar (solo Admin)
-    function abrirFormularioParaEditar(prod) {
-      if (!tieneTokenValido()) return;
-      document.getElementById('productoId').value = prod._id;
-      document.getElementById('nombre').value = prod.nombre;
-      document.getElementById('descripcion').value = prod.descripcion || "";
-      document.getElementById('tallas').value = prod.tallas || "";
-      document.getElementById('colores').value = prod.colores || "";
-      document.getElementById('precio').value = prod.precio;
-      document.getElementById('promo').value = prod.promo || "";
-      document.getElementById('formProducto').querySelector('h3').textContent = "Editar producto (Lociones)";
-      document.getElementById('submitBtn').textContent = "Guardar cambios";
-      document.getElementById('formProducto').style.display = 'block';
-    }
-
-    // 5) Mostrar elementos de Admin cuando hay token válido
-    function habilitarModoAdminInterfaz() {
-      document.getElementById('modoAdminBtn').style.display = 'block';
-      document.getElementById('formProducto').style.display = 'none';
-      document.querySelectorAll("[data-admin='solo']").forEach(el => {
-        el.style.display = '';
       });
-    }
 
-    // 6) Funciones de Autenticación con JWT
+      // 9) Función que muestra todos los elementos data-admin="solo"
+      function habilitarModoAdminInterfaz() {
+        document.getElementById('modoAdminBtn').classList.remove('hidden');
+        document.querySelectorAll("[data-admin='solo']").forEach(el => {
+          el.classList.remove("hidden");
+        });
+      }
+    });
+  </script>
+
+  <!-- ============================================================
+       SCRIPT Modo Admin: login a /login con JWT + edición inline
+       ============================================================ -->
+  <script>
+    // URL base de tu servidor
+    const BACKEND_URL = "https://taloadmin-backend.onrender.com";
+
+    // Al presionar Ctrl+Shift+A, mostramos prompt y hacemos fetch a /login
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!('ontouchstart' in window)) {
+        window.addEventListener('keydown', async (e) => {
+          if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+            e.preventDefault();
+            await iniciarSesionAdmin();
+          }
+        });
+      }
+      // Si ya existe token válido, activamos Modo Admin
+      if (tieneTokenValido()) {
+        habilitarModoAdmin();
+      }
+    });
 
     // Mostrar prompt y llamar a /login para obtener JWT
     async function iniciarSesionAdmin() {
@@ -687,19 +823,18 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
-        if (resp.ok) {
+        if (resp.status === 200) {
           const data = await resp.json();
           const token = data.token;
           localStorage.setItem('admin_jwt', token);
           alert("✔️ Sesión Admin iniciada correctamente.");
-          habilitarModoAdminInterfaz();
-          cargarYRenderizarProductos();
+          habilitarModoAdmin();
         } else {
           const err = await resp.json();
           alert(`❌ ${err.error || 'Credenciales inválidas.'}`);
         }
       } catch (error) {
-        console.error("Error al contactar con backend:", error);
+        console.error("Error al conectar con backend:", error);
         alert("⚠️ Error al contactar al servidor de autenticación.");
       }
     }
@@ -718,24 +853,105 @@
       }
     }
 
-    // Detectar Ctrl+Shift+A para iniciar sesión Admin
-    window.addEventListener('keydown', async (e) => {
-      if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-        e.preventDefault();
-        await iniciarSesionAdmin();
+    // Habilita todos los elementos con data-admin="solo" y hace editable
+    function habilitarModoAdmin() {
+      document.body.classList.add("admin-activo");
+      document.querySelectorAll("[data-admin='solo']").forEach(el => {
+        el.classList.remove("hidden");
+      });
+
+      // Hacer editable todo <h1>, <h2>, <h3>, <h4>, <p>
+      document.querySelectorAll("h1, h2, h3, h4, p").forEach(el => {
+        el.contentEditable = true;
+        el.style.cursor = "text";
+      });
+
+      // Agregar icono de edición + input file a cada imagen
+      document.querySelectorAll("img").forEach(img => {
+        const parent = img.parentElement;
+        if (getComputedStyle(parent).position === "static") {
+          parent.style.position = "relative";
+        }
+        const icono = document.createElement("div");
+        icono.innerText = "✎";
+        icono.style.position = "absolute";
+        icono.style.top = "8px";
+        icono.style.right = "8px";
+        icono.style.background = "rgba(0,0,0,0.6)";
+        icono.style.color = "#fff";
+        icono.style.padding = "2px 5px";
+        icono.style.borderRadius = "4px";
+        icono.style.cursor = "pointer";
+        icono.style.zIndex = "10";
+        icono.style.fontSize = "16px";
+        icono.style.userSelect = "none";
+        parent.appendChild(icono);
+
+        const inputFile = document.createElement("input");
+        inputFile.type = "file";
+        inputFile.accept = "image/*";
+        inputFile.style.display = "none";
+        parent.appendChild(inputFile);
+
+        icono.addEventListener("click", (e) => {
+          e.stopPropagation();
+          inputFile.click();
+        });
+        inputFile.addEventListener("change", (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function(ev) {
+            img.src = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+          inputFile.value = "";
+        });
+
+        img.style.transition = "outline .2s";
+        img.addEventListener("mouseenter", () => {
+          img.style.outline = "2px dashed orange";
+        });
+        img.addEventListener("mouseleave", () => {
+          img.style.outline = "none";
+        });
+      });
+
+      // Banner “Modo Admin Activo”
+      if (!document.getElementById("bannerAdmin")) {
+        const banner = document.createElement("div");
+        banner.id = "bannerAdmin";
+        banner.innerHTML = "🔒 Modo Admin Activo";
+        banner.style.position = "fixed";
+        banner.style.bottom = "10px";
+        banner.style.right = "10px";
+        banner.style.background = "#000";
+        banner.style.color = "#fff";
+        banner.style.padding = "8px 12px";
+        banner.style.zIndex = "2000";
+        banner.style.borderRadius = "4px";
+        document.body.appendChild(banner);
       }
-    });
+    }
 
     // (Opcional) Cerrar sesión Admin: borra token y oculta elementos
     function cerrarSesionAdmin() {
       localStorage.removeItem('admin_jwt');
-      document.getElementById('modoAdminBtn').style.display = 'none';
-      document.getElementById('formProducto').style.display = 'none';
+      document.body.classList.remove("admin-activo");
       document.querySelectorAll("[data-admin='solo']").forEach(el => {
-        el.style.display = 'none';
+        el.classList.add("hidden");
       });
+      document.querySelectorAll("h1, h2, h3, h4, p").forEach(el => {
+        el.contentEditable = false;
+        el.style.cursor = "auto";
+      });
+      document.querySelectorAll("img").forEach(img => {
+        img.style.outline = "none";
+        img.replaceWith(img.cloneNode(true));
+      });
+      const banner = document.getElementById("bannerAdmin");
+      if (banner) banner.remove();
       alert("🔒 Sesión Admin cerrada.");
-      cargarYRenderizarProductos();
     }
   </script>
 </body>

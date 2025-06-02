@@ -1,3 +1,5 @@
+// /models/Product.js
+
 const mongoose = require('mongoose');
 
 const ProductSchema = new mongoose.Schema({
@@ -16,23 +18,32 @@ const ProductSchema = new mongoose.Schema({
     min: 0
   },
   imagenes: {
-    type: [String],       // Array de URLs o rutas de imagen
+    type: [String],
     default: []
   },
   colores: {
-    type: [String],       // Array de nombres de colores
+    type: [String],
     default: []
   },
   tallas: {
-    type: [String],       // Array de tallas disponibles
+    type: [String],
     default: []
+  },
+  promo: {
+    type: String,      // Porcentaje de descuento, ej. "10" para 10% OFF
+    default: ''
+  },
+  categoria: {
+    type: String,      // Ej. "camisas", "shorts", "gorras", "lociones", "promociones"
+    required: true,
+    trim: true
   },
   fechaCreacion: {
     type: Date,
     default: Date.now
   }
 }, {
-  versionKey: false        // Para no incluir el campo "__v"
+  versionKey: false
 });
 
 module.exports = mongoose.model('Product', ProductSchema);

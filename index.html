@@ -198,76 +198,96 @@
 
     // 3) Habilita modo Admin: muestra elementos y hace editable
     function habilitarModoAdmin() {
-      document.body.classList.add("admin-activo");
-      document.querySelectorAll("[data-admin='solo']").forEach(el => {
-        el.classList.remove("hidden");
-      });
+  document.body.classList.add("admin-activo");
+  document.querySelectorAll("[data-admin='solo']").forEach(el => {
+    el.classList.remove("hidden");
+  });
 
-      // ------------------------------------------------------------
-      //  NUEVA LÓGICA: ICONO DE EDICIÓN + SELECTOR DE ARCHIVO LOCAL
-      // ------------------------------------------------------------
+  // ------------------------------------------------------------
+  //  NUEVA LÓGICA: ICONO DE EDICIÓN + SELECTOR DE ARCHIVO LOCAL
+  // ------------------------------------------------------------
 
-      document.querySelectorAll("img").forEach(img => {
-        // 1) Nos aseguramos de que el contenedor padre tenga position: relative
-        const parent = img.parentElement;
-        if (getComputedStyle(parent).position === "static") {
-          parent.style.position = "relative";
-        }
+  document.querySelectorAll("img").forEach(img => {
+    // 1) Nos aseguramos de que el contenedor padre tenga position: relative
+    const parent = img.parentElement;
+    if (getComputedStyle(parent).position === "static") {
+      parent.style.position = "relative";
+      // Si el padre era un <a> o un <div> sin posición, lo convertimos a relativo
+    }
 
-        // 2) Creamos un <div> que actuará como icono de lápiz sobre la imagen
-        const icono = document.createElement("div");
-        icono.innerText = "✎";
-        icono.style.position = "absolute";
-        icono.style.top = "8px";
-        icono.style.right = "8px";
-        icono.style.background = "rgba(0,0,0,0.6)";
-        icono.style.color = "#fff";
-        icono.style.padding = "2px 5px";
-        icono.style.borderRadius = "4px";
-        icono.style.cursor = "pointer";
-        icono.style.zIndex = "10";
-        icono.style.fontSize = "16px";
-        icono.style.userSelect = "none";
-        parent.appendChild(icono);
+    // 2) Creamos un <div> que actuará como icono de lápiz sobre la imagen
+    const icono = document.createElement("div");
+    icono.innerText = "✎";
+    icono.style.position = "absolute";
+    icono.style.top = "8px";
+    icono.style.right = "8px";
+    icono.style.background = "rgba(0,0,0,0.6)";
+    icono.style.color = "#fff";
+    icono.style.padding = "2px 5px";
+    icono.style.borderRadius = "4px";
+    icono.style.cursor = "pointer";
+    icono.style.zIndex = "10";
+    icono.style.fontSize = "16px";
+    icono.style.userSelect = "none";
+    parent.appendChild(icono);
 
-        // 3) Creamos un <input type="file"> oculto para seleccionar la nueva imagen
-        const inputFile = document.createElement("input");
-        inputFile.type = "file";
-        inputFile.accept = "image/*";
-        inputFile.style.display = "none";
-        parent.appendChild(inputFile);
+    // 3) Creamos un <input type="file"> oculto para seleccionar la nueva imagen
+    const inputFile = document.createElement("input");
+    inputFile.type = "file";
+    inputFile.accept = "image/*";
+    inputFile.style.display = "none";
+    parent.appendChild(inputFile);
 
-        // 4) Al hacer clic en el icono, disparamos el selector de archivos
-        icono.addEventListener("click", (e) => {
-          e.stopPropagation();
-          inputFile.click();
-        });
+    // 4) Al hacer clic en el icono, disparamos el selector de archivos
+    icono.addEventListener("click", (e) => {
+      e.stopPropagation();
+      inputFile.click();
+    });
 
-        // 5) Cuando el usuario selecciona un archivo, usamos FileReader para mostrarlo
-        inputFile.addEventListener("change", (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = function(ev) {
-            img.src = ev.target.result;
-          };
-          reader.readAsDataURL(file);
-          inputFile.value = "";
-        });
+    // 5) Cuando el usuario selecciona un archivo, usamos FileReader para mostrarlo
+    inputFile.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+      // Limpiamos el input para que pueda reabrir el mismo archivo si se desea
+      inputFile.value = "";
+    });
 
-        // 6) Efecto visual al pasar el puntero
-        img.style.transition = "outline .2s";
-        img.addEventListener("mouseenter", () => {
-          img.style.outline = "2px dashed orange";
-        });
-        img.addEventListener("mouseleave", () => {
-          img.style.outline = "none";
-        });
-      });
+    // 6) Añadimos un pequeño efecto visual al pasar el puntero (no obligatorio)
+    img.style.transition = "outline .2s";
+    img.addEventListener("mouseenter", () => {
+      img.style.outline = "2px dashed orange";
+    });
+    img.addEventListener("mouseleave", () => {
+      img.style.outline = "none";
+    });
+  });
 
-      // ------------------------------------------------------------
-      //  (Opcional) Mostrar un banner “Modo Admin Activo”
-      // ------------------------------------------------------------
+  // ------------------------------------------------------------
+  //  (Opcional) Mostrar un banner “Modo Admin Activo”
+  // ------------------------------------------------------------
+  if (!document.getElementById("bannerAdmin")) {
+    const banner = document.createElement("div");
+    banner.id = "bannerAdmin";
+    banner.innerText = "🔒 Modo Admin Activo";
+    banner.style.position = "fixed";
+    banner.style.bottom = "10px";
+    banner.style.right = "10px";
+    banner.style.background = "#000";
+    banner.style.color = "#fff";
+    banner.style.padding = "8px 12px";
+    banner.style.zIndex = "2000";
+    banner.style.borderRadius = "4px";
+    document.body.appendChild(banner);
+  }
+}
+
+
+      // 3.3) Banner “Modo Admin Activo”
       if (!document.getElementById("bannerAdmin")) {
         const banner = document.createElement("div");
         banner.id = "bannerAdmin";
@@ -304,11 +324,12 @@
       alert("🔒 Sesión Admin cerrada.");
     }
 
-    // 5) Al cargar la página, si hay token válido, habilitamos Admin; y vinculamos Ctrl+Shift+A
+    // 5) Al cargar, si hay token válido, habilitamos
     window.addEventListener("DOMContentLoaded", () => {
       if (tieneTokenValido()) {
         habilitarModoAdmin();
       }
+      // Vincular Ctrl+Shift+A
       if (!('ontouchstart' in window)) {
         window.addEventListener("keydown", async (e) => {
           if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {

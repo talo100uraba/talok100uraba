@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="estilos_animaciones.css" />
   <style>
     /* ================================
-       Estilos específicos para promociones.html
+       Estilos específicos para promocion.html
        ================================ */
 
     body {
@@ -235,89 +235,130 @@
   </footer>
 
   <!-- ============================================================
-       SCRIPT: Fetch al backend + Renderizado de promociones
+       SCRIPT: IndexedDB (varias categorías) + Renderizado de promociones
        ============================================================ -->
   <script>
-    const BACKEND_URL = "https://taloadmin-backend.onrender.com";
-
+    // Mostrar/ocultar menú hamburguesa
     function toggleMenu() {
       document.getElementById("menu").classList.toggle("show");
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      cargarYRenderizarPromociones();
-    });
+      const contenedorPromo = document.getElementById("productosPromo");
 
-    async function cargarYRenderizarPromociones() {
-      const contenedor = document.getElementById("productosPromo");
-      contenedor.innerHTML = '';
+      // Categorías en las que buscar productos con promo
+      const categorias = ['camisas', 'shorts', 'gorras', 'lociones'];
+      // Si existe un objectStore “promociones” propio, agregar aquí:
+      // categorias.push('promociones');
 
-      try {
-        const resp = await fetch(`${BACKEND_URL}/api/products`);
-        const productos = await resp.json();
+      // Abrir (o crear) base IndexedDB
+      const requestDB = indexedDB.open("TALODB", 1);
 
-        // Filtrar productos que tengan promo válida
-        const promos = productos.filter(p => p.promo && !isNaN(parseInt(p.promo)));
-
-        if (promos.length === 0) {
-          contenedor.innerHTML = `<p class="vacio">No hay productos en promoción por el momento.</p>`;
-          return;
-        }
-
-        promos.forEach(prod => {
-          const precioOriginal = prod.precio;
-          const descuento = parseInt(prod.promo);
-          const precioFinal = Math.round(precioOriginal * (1 - descuento / 100));
-
-          const div = document.createElement('div');
-          div.className = 'producto';
-
-          // Badgedescuento
-          const badge = document.createElement('div');
-          badge.className = 'descuento-badge';
-          badge.textContent = `-${descuento}%`;
-          div.appendChild(badge);
-
-          // Imagen clickeable
-          const enlace = document.createElement('a');
-          enlace.href = `detalle.html?categoria=${prod.categoria}&id=${prod._id}`;
-          enlace.target = '_blank';
-          const img = document.createElement('img');
-          img.src = (prod.imagenes && prod.imagenes.length > 0) ? prod.imagenes[0] : '';
-          img.alt = prod.nombre;
-          enlace.appendChild(img);
-          div.appendChild(enlace);
-
-          // Nombre
-          const h3 = document.createElement('h3');
-          h3.textContent = prod.nombre;
-          div.appendChild(h3);
-
-          // Precio y descuento
-          const pPrecio = document.createElement('p');
-          pPrecio.innerHTML = `
-            <span style="font-size: 1.1rem; font-weight: bold;">$${precioFinal.toLocaleString()}</span>
-            <span style="text-decoration: line-through; color: gray; margin-left: 6px;">
-              $${precioOriginal.toLocaleString()}
-            </span>`;
-          div.appendChild(pPrecio);
-
-          // Botón “Ver detalles”
-          const btn = document.createElement('button');
-          btn.className = 'btn-carrito';
-          btn.textContent = 'Ver detalles';
-          btn.onclick = () => {
-            window.open(`detalle.html?categoria=${prod.categoria}&id=${prod._id}`, "_blank");
-          };
-          div.appendChild(btn);
-
-          contenedor.appendChild(div);
+      requestDB.onupgradeneeded = function(event) {
+        const db = event.target.result;
+        // Asegurarse de que existan los objectStores para cada categoría
+        categorias.forEach(cat => {
+          if (!db.objectStoreNames.contains(cat)) {
+            db.createObjectStore(cat, { keyPath: "id", autoIncrement: true });
+          }
         });
-      } catch (err) {
-        console.error("Error cargando promociones:", err);
-        contenedor.innerHTML = `<p class="vacio">No se pudo cargar las promociones.</p>`;
-      }
-    }
+      };
+
+      requestDB.onsuccess = function(event) {
+        const db = event.target.result;
+
+        // Para cada categoría, obtener todos los productos y filtrar por promo
+        const promesas = categorias.map(cat => {
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(cat, "readonly");
+            const store = tx.objectStore(cat);
+            const getAllReq = store.getAll();
+
+            getAllReq.onsuccess = function(evt) {
+              const items = evt.target.result || [];
+              // Filtrar solo los que tengan promo válida
+              const conDescuento = items.filter(p => p.promo && !isNaN(parseInt(p.promo)));
+              // Anotar la categoría para construir enlaces
+              conDescuento.forEach(p => p.categoria = cat);
+              resolve(conDescuento);
+            };
+
+            getAllReq.onerror = function(err) {
+              console.error(`Error leyendo productos de ${cat}:`, err);
+              resolve([]); // Resolver con lista vacía en caso de error
+            };
+          });
+        });
+
+        Promise.all(promesas).then(arrays => {
+          // “arrays” es un arreglo de arreglos; aplanar
+          const productosPromo = arrays.flat();
+
+          if (productosPromo.length === 0) {
+            // Si no hay productos con descuento
+            contenedorPromo.innerHTML = `<p class="vacio">No hay productos en promoción por el momento.</p>`;
+            return;
+          }
+
+          // Renderizar cada producto en promoción
+          productosPromo.forEach(prod => {
+            // Calcular precio original y precio final
+            const precioOriginal = prod.precio;
+            const descuento = parseInt(prod.promo);
+            const precioFinal = Math.round(precioOriginal * (1 - descuento / 100));
+
+            // Contenedor del producto
+            const div = document.createElement('div');
+            div.className = 'producto';
+
+            // Etiqueta de descuento (“-XX%”)
+            const badge = document.createElement('div');
+            badge.className = 'descuento-badge';
+            badge.textContent = `-${descuento}%`;
+            div.appendChild(badge);
+
+            // Imagen principal clickeable a detalle
+            const enlace = document.createElement('a');
+            enlace.href = `detalle.html?categoria=${prod.categoria}&id=${prod.id}`;
+            enlace.target = '_blank';
+            const img = document.createElement('img');
+            img.src = (prod.imagenes && prod.imagenes[0]) || '';
+            img.alt = prod.nombre;
+            enlace.appendChild(img);
+            div.appendChild(enlace);
+
+            // Nombre
+            const h3 = document.createElement('h3');
+            h3.textContent = prod.nombre;
+            div.appendChild(h3);
+
+            // Precio: mostrar precio final y precio original tachado
+            const pPrecio = document.createElement('p');
+            pPrecio.innerHTML = `<span style="font-size: 1.1rem; font-weight: bold;">$${precioFinal.toLocaleString()}</span>
+                                 <span style="text-decoration: line-through; color: gray; margin-left: 6px;">
+                                   $${precioOriginal.toLocaleString()}
+                                 </span>`;
+            div.appendChild(pPrecio);
+
+            // Botón “Ver detalles / Añadir al carrito”
+            const btnCar = document.createElement('button');
+            btnCar.className = 'btn-carrito';
+            btnCar.textContent = 'Ver detalles';
+            btnCar.onclick = () => {
+              window.open(`detalle.html?categoria=${prod.categoria}&id=${prod.id}`, "_blank");
+            };
+            div.appendChild(btnCar);
+
+            contenedorPromo.appendChild(div);
+          });
+        });
+      };
+
+      requestDB.onerror = function(event) {
+        console.error("Error abriendo IndexedDB en promocion.html:", event.target.errorCode);
+        contenedorPromo.innerHTML = `<p class="vacio">No se pudo cargar las promociones.</p>`;
+      };
+    });
   </script>
 </body>
 </html>
