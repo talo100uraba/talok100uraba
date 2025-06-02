@@ -461,27 +461,33 @@
         const palette = document.createElement('div');
         palette.className = 'color-palette';
 
-        if (prod.colores && prod.colores.trim() !== "") {
-          const arrayDeColores = prod.colores
-            .split(',')
-            .map(c => c.trim().toLowerCase());
+        // Ajuste: prod.colores puede ser array o string
+        let arrayDeColores = [];
+        if (Array.isArray(prod.colores)) {
+          // Si viene como array, lo usamos directamente
+          arrayDeColores = prod.colores.map(c => c.trim().toLowerCase());
+        } else if (prod.colores && typeof prod.colores === 'string') {
+          // Si es string, lo separamos
+          arrayDeColores = prod.colores.split(',').map(c => c.trim().toLowerCase());
+        }
 
-          const diccionarioColores = {
-            rojo: "red",
-            verde: "green",
-            azul: "blue",
-            negro: "black",
-            blanco: "white",
-            amarillo: "yellow",
-            naranja: "orange",
-            morado: "purple",
-            rosado: "pink",
-            gris: "gray",
-            marron: "brown",
-            cian: "cyan",
-            fucsia: "magenta"
-          };
+        const diccionarioColores = {
+          rojo: "red",
+          verde: "green",
+          azul: "blue",
+          negro: "black",
+          blanco: "white",
+          amarillo: "yellow",
+          naranja: "orange",
+          morado: "purple",
+          rosado: "pink",
+          gris: "gray",
+          marron: "brown",
+          cian: "cyan",
+          fucsia: "magenta"
+        };
 
+        if (arrayDeColores.length > 0) {
           arrayDeColores.forEach(colorNombre => {
             const circle = document.createElement('span');
             circle.className = 'color-circle';
