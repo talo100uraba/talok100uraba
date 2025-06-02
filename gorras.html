@@ -25,7 +25,7 @@
       top: 0;
       left: 0;
       width: 100%;
-      height: 60px; /* Altura del header */
+      height: 60px; /* altura del header */
       background-color: #fff;
       border-bottom: 1px solid #000;
       display: flex;
@@ -132,7 +132,7 @@
       text-align: center;
     }
 
-    /* Botones Eliminar / Editar (ocultos inicialmente) */
+    /* Botones Eliminar / Editar (ocultos por defecto) */
     .btn-eliminar,
     .btn-editar {
       position: absolute;
@@ -141,7 +141,8 @@
       border: none;
       font-size: 1.2rem;
       cursor: pointer;
-      display: none; /* Solo en modo Admin */
+      display: none; /* se mostrará solo en modo Admin */
+      z-index: 50;
     }
     .btn-eliminar {
       right: 8px;
@@ -276,7 +277,7 @@
     <!-- Logo + título centrado -->
     <div id="logo">
       <img src="imagenes/talo.png" alt="Logo Talø" />
-      <h1>TALØ</h1>
+      <h1>GORRAS</h1>
     </div>
 
     <!-- Menú desplegable -->
@@ -293,21 +294,21 @@
   <!-- ==============================
        Botón “Modo Admin” (oculto por defecto)
        ============================== -->
-  <button id="modoAdminBtn" class="hidden" data-admin="solo">Modo Admin</button>
+  <button id="modoAdminBtn">Modo Admin</button>
 
   <!-- ==============================
        Formulario de Alta/Edición
        (se muestra solo en modo Admin)
        ============================== -->
-  <form class="admin-form hidden" id="formProducto" data-admin="solo">
-    <h3>Agregar nuevo producto</h3>
+  <form class="admin-form" id="formProducto">
+    <h3 id="formTitulo">Agregar nuevo producto (Gorras)</h3>
     <input type="hidden" id="productoId" value="">
     <input type="text" id="nombre" placeholder="Nombre del producto" required />
     <input type="text" id="descripcion" placeholder="Descripción del producto" />
     <input type="text" id="tallas" placeholder="Tallas (ej: S, M, L)" />
     <input type="text" id="colores" placeholder="Colores (ej: Rojo, Verde, Negro)" />
     <input type="number" id="precio" placeholder="Precio en pesos" required />
-    <input type="text" id="promo" placeholder="Promoción (ej: 10% OFF, opcional)" />
+    <input type="text" id="promo" placeholder="Promoción (ej: 10, opcional)" />
     <input type="file" id="imagenes" accept="image/*" multiple />
     <button type="submit" id="submitBtn">Añadir al catálogo</button>
   </form>
@@ -329,499 +330,284 @@
   </footer>
 
   <!-- =================================================================
-       SCRIPT: IndexedDB v2 + Renderizado de productos + CRUD + Modo Admin
+       SCRIPT: Fetch a backend + Renderizado de productos + CRUD + Modo Admin
        ================================================================= -->
   <script>
-    let db;
-
-    window.addEventListener('DOMContentLoaded', function() {
-      // 1) Abrir (o crear) base IndexedDB en versión 2
-      const request = indexedDB.open("TALODB", 2);
-
-      // Si la base estaba en v1 (con sólo "camisas"), aquí se crean todos los stores:
-      request.onupgradeneeded = function(event) {
-        db = event.target.result;
-        if (!db.objectStoreNames.contains("camisas")) {
-          db.createObjectStore("camisas", { keyPath: "id", autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains("shorts")) {
-          db.createObjectStore("shorts",  { keyPath: "id", autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains("gorras")) {
-          db.createObjectStore("gorras",  { keyPath: "id", autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains("lociones")) {
-          db.createObjectStore("lociones", { keyPath: "id", autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains("promociones")) {
-          db.createObjectStore("promociones", { keyPath: "id", autoIncrement: true });
-        }
-      };
-
-      request.onsuccess = function(event) {
-        db = event.target.result;
-        renderizarProductos();
-
-        // Si existe token Admin y es válido, mostrar interfaz Admin
-        if (tieneTokenValido()) {
-          habilitarModoAdminInterfaz();
-        }
-      };
-
-      request.onerror = function(event) {
-        console.error("Error abriendo IndexedDB v2:", event.target.errorCode);
-        alert("No se pudo abrir la base de datos v2. Algunas funciones no estarán disponibles.");
-      };
-
-      // 2) Mostrar/ocultar menú hamburguesa
-      function toggleMenu() {
-        document.getElementById("menu").classList.toggle("show");
-      }
-      window.toggleMenu = toggleMenu;
-
-      // Referencias a elementos
-      const btnAdmin = document.getElementById('modoAdminBtn');
-      const form = document.getElementById('formProducto');
-      const productosDiv = document.getElementById('productos');
-      const formTitulo = form.querySelector('h3');
-      const submitBtn = document.getElementById('submitBtn');
-      const inputImagenes = document.getElementById('imagenes');
-
-      // 3) Al hacer clic en “Modo Admin”
-      btnAdmin.addEventListener('click', () => {
-        if (!tieneTokenValido()) {
-          alert("🚫 Debes iniciar sesión como Admin.");
-          return;
-        }
-        // Alternar visibilidad del formulario
-        if (form.style.display === 'block') {
-          form.style.display = 'none';
-        } else {
-          abrirFormularioParaAgregar();
-          form.style.display = 'block';
-        }
-      });
-
-      // 4) Funciones para abrir formulario en modo “Agregar” o “Editar”
-      function abrirFormularioParaAgregar() {
-        formTitulo.textContent = "Agregar nuevo producto";
-        submitBtn.textContent = "Añadir al catálogo";
-        document.getElementById('productoId').value = "";
-        form.reset();
-        inputImagenes.required = true; // en alta, requerimos imágenes
-      }
-
-      function abrirFormularioParaEditar(producto) {
-        formTitulo.textContent = "Editar producto";
-        submitBtn.textContent = "Guardar cambios";
-        document.getElementById('productoId').value = producto.id;
-        document.getElementById('nombre').value = producto.nombre;
-        document.getElementById('descripcion').value = producto.descripcion || "";
-        document.getElementById('tallas').value = producto.tallas || "";
-        document.getElementById('colores').value = producto.colores || "";
-        document.getElementById('precio').value = producto.precio;
-        document.getElementById('promo').value = producto.promo || "";
-        inputImagenes.required = false; // en edición, no obligamos a cambiar imagen
-      }
-
-      // 5) Renderizar productos desde IndexedDB
-      function renderizarProductos() {
-        productosDiv.innerHTML = '';
-        if (!db) return;
-
-        // Abrimos la transacción en el objectStore “gorras”
-        const tx = db.transaction("gorras", "readonly");
-        const store = tx.objectStore("gorras");
-
-        store.openCursor().onsuccess = function(event) {
-          const cursor = event.target.result;
-          if (cursor) {
-            const prod = cursor.value;
-            const id = prod.id;
-
-            // Calcular precio y descuento
-            const tieneDescuento = prod.promo && !isNaN(parseInt(prod.promo));
-            const descuento = tieneDescuento ? parseInt(prod.promo) : 0;
-            const precioOriginal = prod.precio;
-            const precioFinal = tieneDescuento
-              ? Math.round(precioOriginal * (1 - descuento / 100))
-              : precioOriginal;
-
-            // Crear tarjeta de producto
-            const div = document.createElement('div');
-            div.className = 'producto';
-
-            /* — Botón Eliminar (✖) — */
-            const btnDel = document.createElement('button');
-            btnDel.className = 'btn-eliminar hidden';
-            btnDel.setAttribute('data-admin', 'solo');
-            btnDel.innerHTML = '✖';
-            btnDel.title = "Eliminar producto";
-            btnDel.onclick = () => {
-              if (!tieneTokenValido()) {
-                alert("Solo Admin puede eliminar.");
-                return;
-              }
-              eliminarProducto(id);
-            };
-            div.appendChild(btnDel);
-
-            /* — Botón Editar (✎) — */
-            const btnEd = document.createElement('button');
-            btnEd.className = 'btn-editar hidden';
-            btnEd.setAttribute('data-admin', 'solo');
-            btnEd.innerHTML = '✎';
-            btnEd.title = "Editar producto";
-            btnEd.onclick = () => {
-              if (!tieneTokenValido()) {
-                alert("Solo Admin puede editar.");
-                return;
-              }
-              cargarProductoParaEditar(id);
-            };
-            div.appendChild(btnEd);
-
-            /* — Imagen clickeable a detalle.html — */
-            const enlace = document.createElement('a');
-            enlace.href = `detalle.html?categoria=gorras&id=${id}`;
-            enlace.target = '_blank';
-            const img = document.createElement('img');
-            img.src = (prod.imagenes && prod.imagenes[0]) || '';
-            img.alt = prod.nombre;
-            enlace.appendChild(img);
-            div.appendChild(enlace);
-
-            /* — Nombre del producto — */
-            const h3 = document.createElement('h3');
-            h3.textContent = prod.nombre;
-            div.appendChild(h3);
-
-            /* — Descripción (si existe) — */
-            if (prod.descripcion) {
-              const pDesc = document.createElement('p');
-              pDesc.textContent = prod.descripcion;
-              div.appendChild(pDesc);
-            }
-
-            /* — Precio y posible descuento — */
-            const pPrecio = document.createElement('p');
-            pPrecio.innerHTML = `<span style="font-size: 1.1rem; font-weight: bold;">$${precioFinal.toLocaleString()}</span>`;
-            if (tieneDescuento) {
-              pPrecio.innerHTML += `
-                <span style="text-decoration: line-through; color: gray; margin-left: 6px;">
-                  $${precioOriginal.toLocaleString()}
-                </span>
-                <span style="background: #000; color: #fff; padding: 2px 6px; font-size: 0.85rem; margin-left: 6px;">
-                  -${descuento}%
-                </span>`;
-            }
-            div.appendChild(pPrecio);
-
-            /* — Paleta de colores — */
-            const pColores = document.createElement('p');
-            pColores.textContent = "Colores:";
-            div.appendChild(pColores);
-
-            const palette = document.createElement('div');
-            palette.className = 'color-palette';
-
-            if (prod.colores && prod.colores.trim() !== "") {
-              // Separamos la cadena por comas, quitamos espacios y a minúsculas
-              const arrayDeColores = prod.colores
-                .split(',')
-                .map(c => c.trim().toLowerCase());
-
-              // Diccionario español → CSS
-              const diccionarioColores = {
-                rojo: "red",
-                verde: "green",
-                azul: "blue",
-                negro: "black",
-                blanco: "white",
-                amarillo: "yellow",
-                naranja: "orange",
-                morado: "purple",
-                rosado: "pink",
-                gris: "gray",
-                marron: "brown",
-                cian: "cyan",
-                fucsia: "magenta"
-              };
-
-              arrayDeColores.forEach(colorNombre => {
-                const circle = document.createElement('span');
-                circle.className = 'color-circle';
-
-                // 1) Si está en el diccionario, lo usamos:
-                if (diccionarioColores[colorNombre]) {
-                  circle.style.backgroundColor = diccionarioColores[colorNombre];
-                }
-                // 2) Si es código hex (#FFF o #AABBCC), lo usamos:
-                else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorNombre)) {
-                  circle.style.backgroundColor = colorNombre;
-                }
-                // 3) Si no se reconoce, lo dejamos blanco
-                else {
-                  circle.style.backgroundColor = "#fff";
-                }
-
-                palette.appendChild(circle);
-              });
-            } else {
-              // Si no hay colores, un círculo blanco genérico
-              const circle = document.createElement('span');
-              circle.className = 'color-circle';
-              circle.style.backgroundColor = "#fff";
-              palette.appendChild(circle);
-            }
-
-            div.appendChild(palette);
-
-            /* — Botón “Añadir al carrito” — */
-            const btnCar = document.createElement('button');
-            btnCar.className = 'btn-carrito';
-            btnCar.textContent = 'Añadir al carrito';
-            btnCar.onclick = () => irADetalle(id);
-            div.appendChild(btnCar);
-
-            productosDiv.appendChild(div);
-            cursor.continue();
-          }
-        };
-
-        store.openCursor().onerror = function(event) {
-          console.error("Error al iterar productos:", event.target.error);
-        };
-
-        // Si estamos en modo Admin, mostramos elementos data-admin="solo"
-        if (tieneTokenValido()) {
-          habilitarModoAdminInterfaz();
-        }
-      }
-
-      // Al pulsar en “Añadir al carrito”, abrimos detalle.html
-      window.irADetalle = function(id) {
-        const url = `detalle.html?categoria=gorras&id=${id}`;
-        window.open(url, "_blank");
-      };
-
-      // 6) Eliminar producto (solo Admin)
-      window.eliminarProducto = function(id) {
-        if (!tieneTokenValido()) return;
-        if (!db) return;
-        if (!confirm("¿Seguro que deseas eliminar este producto?")) return;
-
-        const tx = db.transaction("gorras", "readwrite");
-        const store = tx.objectStore("gorras");
-        const deleteReq = store.delete(id);
-        deleteReq.onsuccess = function() {
-          renderizarProductos();
-        };
-        deleteReq.onerror = function(event) {
-          console.error("Error al eliminar producto con id " + id, event.target.error);
-        };
-      };
-
-      // 7) Cargar producto en el formulario para editar (solo Admin)
-      function cargarProductoParaEditar(id) {
-        if (!tieneTokenValido()) return;
-        if (!db) return;
-
-        const tx = db.transaction("gorras", "readonly");
-        const store = tx.objectStore("gorras");
-        store.get(id).onsuccess = function(evt) {
-          const producto = evt.target.result;
-          if (!producto) {
-            alert("Producto no encontrado.");
-            return;
-          }
-          abrirFormularioParaEditar(producto);
-          form.style.display = 'block';
-        };
-        store.get(id).onerror = function(event) {
-          console.error("Error al obtener producto para editar:", event.target.error);
-        };
-      }
-
-      // 8) Manejo del formulario (submit): alta o edición
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        // Verificamos que el Admin esté logueado mediante JWT válido
-        if (!tieneTokenValido()) {
-          alert("🚫 Debes iniciar sesión como Admin para guardar cambios.");
-          return;
-        }
-        if (!db) {
-          alert("La base de datos no está lista.");
-          return;
-        }
-
-        const idEdicion = document.getElementById('productoId').value;
-        let imagenesArray = [];
-        const archivos = inputImagenes.files;
-
-        if (!idEdicion) {
-          // MODO CREAR NUEVO: requerimos al menos 1 imagen
-          if (!archivos || archivos.length === 0) {
-            alert("Debes seleccionar al menos una imagen.");
-            return;
-          }
-          // Convertir archivos a Base64
-          try {
-            console.clear();
-            console.log("=== Iniciando procesamiento de archivos (NUEVO) ===");
-            const promesas = Array.from(archivos).map(file => {
-              return new Promise((resolve, reject) => {
-                if (!file.type.startsWith("image/")) {
-                  reject(new Error(`"${file.name}" no es una imagen.`));
-                  return;
-                }
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = (err) => reject(new Error(`Error al leer "${file.name}": ${err}`));
-                reader.readAsDataURL(file);
-              });
-            });
-
-            const resultados = await Promise.allSettled(promesas);
-            imagenesArray = resultados
-              .filter(r => r.status === "fulfilled")
-              .map(r => r.value);
-
-            console.log(">>> producto.imagenes array:", imagenesArray);
-            console.log(">>> número de imágenes obtenidas:", imagenesArray.length);
-
-            if (imagenesArray.length === 0) {
-              alert("No se pudo procesar ninguna imagen válida.");
-              return;
-            }
-          } catch (err) {
-            console.error("Error al procesar imágenes:", err);
-            alert("Error inesperado al procesar las imágenes.");
-            return;
-          }
-        }
-
-        // Leemos los demás campos
-        const nombre = document.getElementById('nombre').value;
-        const descripcion = document.getElementById('descripcion').value;
-        const tallas = document.getElementById('tallas').value;
-        const colores = document.getElementById('colores').value;
-        const precio = parseInt(document.getElementById('precio').value);
-        const promo = document.getElementById('promo').value;
-
-        if (!nombre || isNaN(precio)) {
-          alert("Nombre y precio son obligatorios.");
-          return;
-        }
-
-        if (idEdicion) {
-          // -------- MODO EDICIÓN --------
-          const idNum = parseInt(idEdicion);
-          const txE = db.transaction("gorras", "readwrite");
-          const storeE = txE.objectStore("gorras");
-
-          // Primero obtenemos el producto original para conservar sus imágenes si no se cambian
-          storeE.get(idNum).onsuccess = function(evt) {
-            const orig = evt.target.result;
-            if (!orig) {
-              alert("El producto original no se encontró.");
-              return;
-            }
-            // Si el usuario no sube nuevas imágenes, conservamos las antiguas
-            const nuevasImagenes = imagenesArray.length > 0 ? imagenesArray : orig.imagenes;
-
-            const updated = {
-              id: idNum,
-              nombre: nombre,
-              descripcion: descripcion,
-              tallas: tallas,
-              colores: colores,
-              precio: precio,
-              promo: promo,
-              imagenes: nuevasImagenes
-            };
-
-            const putReq = storeE.put(updated);
-            putReq.onsuccess = function() {
-              alert("Producto actualizado correctamente.");
-              form.reset();
-              form.style.display = 'none';
-              renderizarProductos();
-            };
-            putReq.onerror = function(event) {
-              console.error("Error al actualizar producto:", event.target.error);
-              alert("No se pudo actualizar el producto.");
-            };
-          };
-          storeE.get(idNum).onerror = function(event) {
-            console.error("Error al obtener producto para edición:", event.target.error);
-          };
-
-        } else {
-          // -------- MODO CREAR NUEVO --------
-          const nuevoProducto = {
-            nombre: nombre,
-            descripcion: descripcion,
-            tallas: tallas,
-            colores: colores,
-            precio: precio,
-            promo: promo,
-            imagenes: imagenesArray
-          };
-
-          const txN = db.transaction("gorras", "readwrite");
-          const storeN = txN.objectStore("gorras");
-          const addReq = storeN.add(nuevoProducto);
-
-          addReq.onsuccess = function() {
-            alert("Producto agregado al catálogo.");
-            form.reset();
-            form.style.display = 'none';
-            renderizarProductos();
-          };
-          addReq.onerror = function(event) {
-            console.error("Error al guardar producto:", event.target.error);
-            alert("No se pudo guardar el producto.");
-          };
-        }
-      });
-
-      // 9) Función que muestra todos los elementos data-admin="solo"
-      function habilitarModoAdminInterfaz() {
-        document.getElementById('modoAdminBtn').classList.remove('hidden');
-        document.querySelectorAll("[data-admin='solo']").forEach(el => {
-          el.classList.remove("hidden");
-        });
-      }
-    });
-  </script>
-
-  <!-- ============================================================
-       SCRIPT Modo Admin: login a /login con JWT + edición inline
-       ============================================================ -->
-  <script>
-    // URL base de tu servidor
     const BACKEND_URL = "https://taloadmin-backend.onrender.com";
+    const categoria   = "gorras";
 
-    // Al presionar Ctrl+Shift+A, mostramos prompt y hacemos fetch a /login
+    const btnAdmin      = document.getElementById('modoAdminBtn');
+    const form          = document.getElementById('formProducto');
+    const productosDiv  = document.getElementById('productos');
+    const formTitulo    = document.getElementById('formTitulo');
+    const submitBtn     = document.getElementById('submitBtn');
+    const inputImagenes = document.getElementById('imagenes');
+
+    // Mostrar/ocultar menú hamburguesa
+    function toggleMenu() {
+      document.getElementById("menu").classList.toggle("show");
+    }
+    window.toggleMenu = toggleMenu;
+
+    // Al cargar la página
     window.addEventListener('DOMContentLoaded', () => {
-      if (!('ontouchstart' in window)) {
-        window.addEventListener('keydown', async (e) => {
-          if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-            e.preventDefault();
-            await iniciarSesionAdmin();
-          }
-        });
-      }
-      // Si ya existe token válido, activamos Modo Admin
+      cargarProductos();
+
+      // Si ya hay token y es válido, habilitar elementos de Admin
       if (tieneTokenValido()) {
-        habilitarModoAdmin();
+        btnAdmin.style.display = 'block';
+        mostrarBotonesAdmin();
       }
+
+      // Capturar Ctrl+Shift+A para iniciar sesión Admin
+      window.addEventListener('keydown', async (e) => {
+        if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+          e.preventDefault();
+          await iniciarSesionAdmin();
+        }
+      });
     });
 
-    // Mostrar prompt y llamar a /login para obtener JWT
+    // 1) Cargar productos desde el backend
+    async function cargarProductos() {
+      try {
+        console.log("🔍 Invocando cargarProductos()…");
+        const resp = await fetch(`${BACKEND_URL}/api/products`);
+        if (!resp.ok) throw new Error("No se pudieron cargar los productos.");
+        const todos = await resp.json();
+        console.log("🎉 Productos recibidos en frontend:", todos);
+        const soloGorras = todos.filter(p => p.categoria === categoria);
+        mostrarProductosEnPantalla(soloGorras);
+      } catch (err) {
+        console.error("Error al cargar productos:", err);
+        productosDiv.innerHTML = "<p>Error al cargar productos.</p>";
+      }
+    }
+
+    // 2) Renderizar productos en la grilla
+    function mostrarProductosEnPantalla(productos) {
+      console.log("🏗️  Renderizando productos en pantalla:", productos);
+      productosDiv.innerHTML = '';
+      productos.forEach(prod => {
+        const card = document.createElement('div');
+        card.className = 'producto';
+
+        // Botón Eliminar
+        const btnDel = document.createElement('button');
+        btnDel.className = 'btn-eliminar';
+        btnDel.textContent = '✖';
+        btnDel.title = "Eliminar producto";
+        btnDel.style.display = 'none';
+        btnDel.onclick = () => eliminarProducto(prod._id);
+        card.appendChild(btnDel);
+
+        // Botón Editar
+        const btnEd = document.createElement('button');
+        btnEd.className = 'btn-editar';
+        btnEd.textContent = '✎';
+        btnEd.title = "Editar producto";
+        btnEd.style.display = 'none';
+        btnEd.onclick = () => abrirFormularioEditar(prod._id);
+        card.appendChild(btnEd);
+
+        // Imagen clickeable a detalle.html
+        const enlace = document.createElement('a');
+        enlace.href = `detalle.html?categoria=${categoria}&id=${prod._id}`;
+        enlace.target = '_blank';
+        const img = document.createElement('img');
+        img.src = (prod.imagenes && prod.imagenes[0]) || '';
+        img.alt = prod.nombre;
+        enlace.appendChild(img);
+        card.appendChild(enlace);
+
+        // Nombre del producto
+        const h3 = document.createElement('h3');
+        h3.textContent = prod.nombre;
+        card.appendChild(h3);
+
+        // Descripción (si existe)
+        if (prod.descripcion) {
+          const pDesc = document.createElement('p');
+          pDesc.textContent = prod.descripcion;
+          card.appendChild(pDesc);
+        }
+
+        // Precio y descuento
+        const tieneDescuento = prod.promo && !isNaN(parseInt(prod.promo));
+        const descuento = tieneDescuento ? parseInt(prod.promo) : 0;
+        const precioOriginal = prod.precio;
+        const precioFinal = tieneDescuento
+          ? Math.round(precioOriginal * (1 - descuento / 100))
+          : precioOriginal;
+
+        const pPrecio = document.createElement('p');
+        pPrecio.innerHTML = `<span style="font-size: 1.1rem; font-weight: bold;">$${precioFinal.toLocaleString()}</span>`;
+        if (tieneDescuento) {
+          pPrecio.innerHTML += `
+            <span style="text-decoration: line-through; color: gray; margin-left: 6px;">
+              $${precioOriginal.toLocaleString()}
+            </span>
+            <span style="background: #000; color: #fff; padding: 2px 6px; font-size: 0.85rem; margin-left: 6px;">
+              -${descuento}%  
+            </span>`;
+        }
+        card.appendChild(pPrecio);
+
+        // Paleta de colores
+        const pColores = document.createElement('p');
+        pColores.textContent = "Colores:";
+        card.appendChild(pColores);
+
+        const palette = document.createElement('div');
+        palette.className = 'color-palette';
+
+        // Ajuste: prod.colores puede ser array o string
+        let arrayDeColores = [];
+        if (Array.isArray(prod.colores)) {
+          arrayDeColores = prod.colores.map(c => c.trim().toLowerCase());
+        } else if (prod.colores && typeof prod.colores === 'string') {
+          arrayDeColores = prod.colores.split(',').map(c => c.trim().toLowerCase());
+        }
+
+        const diccionarioColores = {
+          // Colores básicos
+          rojo:      "red",
+          verde:     "green",
+          azul:      "blue",
+          negro:     "black",
+          blanco:    "white",
+          amarillo:  "yellow",
+          naranja:   "orange",
+          morado:    "purple",
+          rosado:    "pink",
+          gris:      "gray",
+          marron:    "brown",
+          cian:      "cyan",
+          fucsia:    "magenta",
+
+          // Tonos intermedios / variantes
+          rojo_claro:       "lightcoral",
+          rojo_oscuro:      "darkred",
+          verde_claro:      "lightgreen",
+          verde_oscuro:     "darkgreen",
+          azul_claro:       "lightblue",
+          azul_oscuro:      "darkblue",
+          gris_claro:       "lightgray",
+          gris_oscuro:      "darkgray",
+          marron_claro:     "peru",
+          marron_oscuro:    "saddlebrown",
+          morado_claro:     "plum",
+          morado_oscuro:    "indigo",
+          rosado_claro:     "lightpink",
+          rosado_oscuro:    "deeppink",
+          amarillo_claro:   "lightyellow",
+          naranja_claro:    "peachpuff",
+          naranja_oscuro:   "darkorange",
+          beige:            "beige",
+
+          // Colores pastel
+          pastel_rojo:      "#ff9999",
+          pastel_rosa:      "#ffb6c1",
+          pastel_verde:     "#77dd77",
+          pastel_amarillo:  "#fdfd96",
+          pastel_azul:      "#aec6cf",
+          pastel_morado:    "#cdb4db",
+          pastel_turquesa:  "#afeeee",
+
+          // Colores tierra / neutros
+          beige_oscuro:       "#a0522d",
+          caqui:              "khaki",
+          marron_tierra:      "#8b4513",
+          arena:              "#c2b280",
+          crema:              "#fffdd0",
+
+          // Colores “joya”
+          esmeralda:         "#50c878",
+          zafiro:            "#0f52ba",
+          rubi:              "#e0115f",
+          topacio:           "#ffc87c",
+          amatista:          "#9966cc",
+
+          // Colores metalizados
+          dorado:            "gold",
+          plateado:          "silver",
+          bronce:            "#cd7f32",
+
+          // Colores “vinos” / oscuros
+          vino:              "#722f37",
+          granate:           "#800000",
+          berenjena:         "#3b0911",
+          azul_marino:       "navy",
+          oliva:             "olive",
+
+          // Colores aqua / marinos
+          turquesa:          "turquoise",
+          aqua:              "aqua",
+          celeste:           "#b2ffff",
+          teal:              "teal",
+          marino_claro:      "#5f9ea0",
+
+          // Colores especiales
+          coral:             "coral",
+          champagne:         "#f7e7ce",
+          chocolate:         "chocolate",
+          salmon:            "salmon",
+          lavanda:           "lavender",
+          pistacho:          "#93c572",
+          lima:              "lime",
+          lima_claro:        "#ccff00",
+          indigo:            "indigo",
+          magenta_oscuro:    "#8b008b",
+          cyan_oscuro:       "#008b8b",
+          gris_perla:        "#eae0c8"
+        };
+
+        if (arrayDeColores.length > 0) {
+          arrayDeColores.forEach(colorNombre => {
+            const circle = document.createElement('span');
+            circle.className = 'color-circle';
+
+            if (diccionarioColores[colorNombre]) {
+              circle.style.backgroundColor = diccionarioColores[colorNombre];
+            } else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorNombre)) {
+              circle.style.backgroundColor = colorNombre;
+            } else {
+              circle.style.backgroundColor = "#fff";
+            }
+
+            palette.appendChild(circle);
+          });
+        } else {
+          const circle = document.createElement('span');
+          circle.className = 'color-circle';
+          circle.style.backgroundColor = "#fff";
+          palette.appendChild(circle);
+        }
+
+        card.appendChild(palette);
+
+        // Botón “Añadir al carrito”
+        const btnCar = document.createElement('button');
+        btnCar.className = 'btn-carrito';
+        btnCar.textContent = 'Añadir al carrito';
+        btnCar.onclick = () => irADetalle(prod._id);
+        card.appendChild(btnCar);
+
+        productosDiv.appendChild(card);
+      });
+
+      if (tieneTokenValido()) {
+        mostrarBotonesAdmin();
+      }
+    }
+
+    // 3) Abrir detalle en nueva pestaña
+    function irADetalle(id) {
+      const url = `detalle.html?categoria=${categoria}&id=${id}`;
+      window.open(url, "_blank");
+    }
+
+    // 4) Iniciar sesión Admin (prompt + fetch a /login)
     async function iniciarSesionAdmin() {
       const username = prompt("👉 Ingrese Usuario (modo Admin):", "");
       if (!username) return;
@@ -834,23 +620,23 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
-        if (resp.status === 200) {
-          const data = await resp.json();
-          const token = data.token;
-          localStorage.setItem('admin_jwt', token);
-          alert("✔️ Sesión Admin iniciada correctamente.");
-          habilitarModoAdmin();
-        } else {
+        if (!resp.ok) {
           const err = await resp.json();
           alert(`❌ ${err.error || 'Credenciales inválidas.'}`);
+          return;
         }
+        const { token } = await resp.json();
+        localStorage.setItem('admin_jwt', token);
+        alert("✔️ Sesión Admin iniciada correctamente.");
+        btnAdmin.style.display = 'block';
+        mostrarBotonesAdmin();
       } catch (error) {
         console.error("Error al conectar con backend:", error);
         alert("⚠️ Error al contactar al servidor de autenticación.");
       }
     }
 
-    // Verifica si hay un token en localStorage y si no está expirado
+    // 5) Verificar si hay un token válido en localStorage
     function tieneTokenValido() {
       const token = localStorage.getItem('admin_jwt');
       if (!token) return false;
@@ -859,111 +645,197 @@
         const decoded = JSON.parse(atob(payloadBase64));
         const ahora = Math.floor(Date.now() / 1000);
         return decoded.exp && decoded.exp > ahora;
-      } catch (e) {
+      } catch {
         return false;
       }
     }
 
-    // Habilita todos los elementos con data-admin="solo" y hace editable
-    function habilitarModoAdmin() {
-      document.body.classList.add("admin-activo");
-      document.querySelectorAll("[data-admin='solo']").forEach(el => {
-        el.classList.remove("hidden");
+    // 6) Mostrar botones Eliminar/Editar y “Modo Admin”
+    function mostrarBotonesAdmin() {
+      document.querySelectorAll('.btn-eliminar, .btn-editar').forEach(btn => {
+        btn.style.display = 'block';
       });
+      btnAdmin.style.display = 'block';
+    }
 
-      // Hacer editable todo <h1>, <h2>, <h3>, <h4>, <p>
-      document.querySelectorAll("h1, h2, h3, h4, p").forEach(el => {
-        el.contentEditable = true;
-        el.style.cursor = "text";
-      });
-
-      // Agregar icono de edición + input file a cada imagen
-      document.querySelectorAll("img").forEach(img => {
-        const parent = img.parentElement;
-        if (getComputedStyle(parent).position === "static") {
-          parent.style.position = "relative";
-        }
-        const icono = document.createElement("div");
-        icono.innerText = "✎";
-        icono.style.position = "absolute";
-        icono.style.top = "8px";
-        icono.style.right = "8px";
-        icono.style.background = "rgba(0,0,0,0.6)";
-        icono.style.color = "#fff";
-        icono.style.padding = "2px 5px";
-        icono.style.borderRadius = "4px";
-        icono.style.cursor = "pointer";
-        icono.style.zIndex = "10";
-        icono.style.fontSize = "16px";
-        icono.style.userSelect = "none";
-        parent.appendChild(icono);
-
-        const inputFile = document.createElement("input");
-        inputFile.type = "file";
-        inputFile.accept = "image/*";
-        inputFile.style.display = "none";
-        parent.appendChild(inputFile);
-
-        icono.addEventListener("click", (e) => {
-          e.stopPropagation();
-          inputFile.click();
+    // 7) Eliminar producto (DELETE)
+    async function eliminarProducto(id) {
+      if (!tieneTokenValido()) return;
+      if (!confirm("¿Seguro que deseas eliminar este producto?")) return;
+      const token = localStorage.getItem('admin_jwt');
+      try {
+        const resp = await fetch(`${BACKEND_URL}/api/products/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
         });
-        inputFile.addEventListener("change", (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = function(ev) {
-            img.src = ev.target.result;
-          };
-          reader.readAsDataURL(file);
-          inputFile.value = "";
-        });
-
-        img.style.transition = "outline .2s";
-        img.addEventListener("mouseenter", () => {
-          img.style.outline = "2px dashed orange";
-        });
-        img.addEventListener("mouseleave", () => {
-          img.style.outline = "none";
-        });
-      });
-
-      // Banner “Modo Admin Activo”
-      if (!document.getElementById("bannerAdmin")) {
-        const banner = document.createElement("div");
-        banner.id = "bannerAdmin";
-        banner.innerHTML = "🔒 Modo Admin Activo";
-        banner.style.position = "fixed";
-        banner.style.bottom = "10px";
-        banner.style.right = "10px";
-        banner.style.background = "#000";
-        banner.style.color = "#fff";
-        banner.style.padding = "8px 12px";
-        banner.style.zIndex = "2000";
-        banner.style.borderRadius = "4px";
-        document.body.appendChild(banner);
+        if (!resp.ok) throw new Error("No se pudo eliminar el producto.");
+        alert("Producto eliminado del servidor.");
+        cargarProductos();
+      } catch (err) {
+        console.error("Error al eliminar producto:", err);
+        alert("Error al eliminar producto.");
       }
     }
 
-    // (Opcional) Cerrar sesión Admin: borra token y oculta elementos
-    function cerrarSesionAdmin() {
-      localStorage.removeItem('admin_jwt');
-      document.body.classList.remove("admin-activo");
-      document.querySelectorAll("[data-admin='solo']").forEach(el => {
-        el.classList.add("hidden");
-      });
-      document.querySelectorAll("h1, h2, h3, h4, p").forEach(el => {
-        el.contentEditable = false;
-        el.style.cursor = "auto";
-      });
-      document.querySelectorAll("img").forEach(img => {
-        img.style.outline = "none";
-        img.replaceWith(img.cloneNode(true));
-      });
-      const banner = document.getElementById("bannerAdmin");
-      if (banner) banner.remove();
-      alert("🔒 Sesión Admin cerrada.");
+    // 8) Abrir formulario para editar (GET y cargar datos)
+    async function abrirFormularioEditar(id) {
+      if (!tieneTokenValido()) return;
+      try {
+        const resp = await fetch(`${BACKEND_URL}/api/products/${id}`);
+        if (!resp.ok) throw new Error("No se pudo obtener el producto.");
+        const producto = await resp.json();
+
+        formTitulo.textContent = "Editar producto (Gorras)";
+        submitBtn.textContent = "Guardar cambios";
+        document.getElementById('productoId').value = producto._id;
+        document.getElementById('nombre').value = producto.nombre;
+        document.getElementById('descripcion').value = producto.descripcion || "";
+        document.getElementById('tallas').value = producto.tallas.join(',');
+        document.getElementById('colores').value = producto.colores.join(',');
+        document.getElementById('precio').value = producto.precio;
+        document.getElementById('promo').value = producto.promo || "";
+        inputImagenes.required = false; // no forzar nueva imagen al editar
+
+        form.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (error) {
+        console.error("Error al cargar producto para edición:", error);
+        alert("Error al cargar datos para edición.");
+      }
     }
+
+    // 9) Abrir formulario para agregar (resetea campos)
+    function abrirFormularioParaAgregar() {
+      formTitulo.textContent = "Agregar nuevo producto (Gorras)";
+      submitBtn.textContent = "Añadir al catálogo";
+      document.getElementById('productoId').value = "";
+      form.reset();
+      inputImagenes.required = true;
+      form.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 10) Botón “Modo Admin” alterna formulario
+    btnAdmin.addEventListener('click', () => {
+      if (!tieneTokenValido()) {
+        alert("🚫 Debes iniciar sesión como Admin.");
+        return;
+      }
+      if (form.style.display === 'block') {
+        form.style.display = 'none';
+      } else {
+        abrirFormularioParaAgregar();
+      }
+    });
+
+    // 11) Manejo del formulario (submit): creación o edición
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!tieneTokenValido()) {
+        alert("🚫 Debes iniciar sesión como Admin para guardar cambios.");
+        return;
+      }
+
+      const idEdicion = document.getElementById('productoId').value;
+      let imagenesArray = [];
+      const archivos = inputImagenes.files;
+
+      if (!idEdicion) {
+        // NUEVO PRODUCTO: requerimos al menos 1 imagen
+        if (!archivos || archivos.length === 0) {
+          alert("Debes seleccionar al menos una imagen.");
+          return;
+        }
+        try {
+          const promesas = Array.from(archivos).map(file => {
+            return new Promise((resolve, reject) => {
+              if (!file.type.startsWith("image/")) {
+                reject(new Error(`"${file.name}" no es una imagen.`));
+                return;
+              }
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = () => reject(new Error(`Error leyendo "${file.name}".`));
+              reader.readAsDataURL(file);
+            });
+          });
+          const resultados = await Promise.allSettled(promesas);
+          imagenesArray = resultados
+            .filter(r => r.status === "fulfilled")
+            .map(r => r.value);
+
+          if (imagenesArray.length === 0) {
+            alert("No se pudo procesar ninguna imagen válida.");
+            return;
+          }
+        } catch (err) {
+          console.error("Error al procesar imágenes:", err);
+          alert("Error al procesar las imágenes.");
+          return;
+        }
+      }
+
+      // Leer campos del formulario
+      const nombre      = document.getElementById('nombre').value;
+      const descripcion = document.getElementById('descripcion').value;
+      const tallasArr   = document.getElementById('tallas').value
+                           .split(',').map(s => s.trim());
+      const coloresArr  = document.getElementById('colores').value
+                           .split(',').map(s => s.trim());
+      const precio      = parseFloat(document.getElementById('precio').value);
+      const promo       = document.getElementById('promo').value;
+      const token       = localStorage.getItem('admin_jwt');
+
+      if (!nombre || isNaN(precio)) {
+        alert("Nombre y precio son obligatorios.");
+        return;
+      }
+
+      const prodData = {
+        nombre,
+        descripcion,
+        tallas: tallasArr,
+        colores: coloresArr,
+        precio,
+        promo,
+        imagenes: imagenesArray,
+        categoria
+      };
+
+      try {
+        if (idEdicion) {
+          // EDICIÓN (PUT)
+          const resp = await fetch(`${BACKEND_URL}/api/products/${idEdicion}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(prodData)
+          });
+          if (!resp.ok) throw new Error("No se pudo actualizar el producto.");
+          alert("✔️ Producto actualizado correctamente.");
+        } else {
+          // CREACIÓN (POST)
+          const resp = await fetch(`${BACKEND_URL}/api/products`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(prodData)
+          });
+          if (!resp.ok) throw new Error("No se pudo crear el producto.");
+          alert("✔️ Producto agregado al catálogo.");
+        }
+        form.reset();
+        form.style.display = 'none';
+        cargarProductos();
+      } catch (err) {
+        console.error("Error al guardar producto:", err);
+        alert("Error al guardar producto.");
+      }
+    });
   </script>
 </body>
 </html>
