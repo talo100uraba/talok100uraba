@@ -338,19 +338,20 @@
 
     // Diccionario Español → CSS válido
     const diccionarioColores = {
-      rojo: "red",
-      verde: "green",
-      azul: "blue",
-      negro: "black",
-      blanco: "white",
-      amarillo: "yellow",
+      rojo:    "red",
+      verde:   "green",
+      azul:    "blue",
+      negro:   "black",
+      blanco:  "white",
+      amarillo:"yellow",
       naranja: "orange",
-      morado: "purple",
-      rosado: "pink",
-      gris: "gray",
-      marron: "brown",
-      cian: "cyan",
-      fucsia: "magenta"
+      morado:  "purple",
+      rosado:  "pink",
+      gris:    "gray",
+      marron:  "brown",
+      cian:    "cyan",
+      fucsia:  "magenta",
+      'marrón': "brown"
     };
 
     // Validar parámetros
@@ -358,12 +359,12 @@
       container.innerHTML =
         "<p style='text-align:center; font-size:1.2rem;'>URL inválida o faltan parámetros.</p>";
     } else {
-      // 2) Abrimos IndexedDB "TALODB" versión 2 (idéntica a la que usan camisas, shorts, etc.)
+      // 2) Abrimos IndexedDB "TALODB" versión 2
       const requestDB = indexedDB.open("TALODB", 2);
 
       requestDB.onupgradeneeded = function(event) {
         const db = event.target.result;
-        // Nos aseguramos de que existan todas las tiendas:
+        // Asegurarnos de que existan todas las tiendas:
         if (!db.objectStoreNames.contains("camisas")) {
           db.createObjectStore("camisas", { keyPath: "id", autoIncrement: true });
         }
@@ -384,7 +385,7 @@
       requestDB.onsuccess = function(event) {
         const db = event.target.result;
 
-        // 3) Iniciamos transacción para leer un solo producto por su clave (id)
+        // 3) Iniciamos transacción para leer el producto por su clave (id)
         let tx;
         try {
           tx = db.transaction(categoria, "readonly");
@@ -399,31 +400,26 @@
         store.get(id).onsuccess = function(evt) {
           const producto = evt.target.result;
 
-          // Debug en consola
-          console.log(">>> producto recibido en detalle.html:", producto);
-
           if (!producto) {
             container.innerHTML =
               "<p style='text-align:center; font-size:1.2rem;'>Producto no encontrado.</p>";
             return;
           }
 
-          // 4) Preparamos los arrays a partir del objeto producto
+          // 4) Preparamos arrays a partir del objeto producto
           const imagenes = producto.imagenes || [];
-          console.log(">>> arreglo 'imagenes' en detalle:", imagenes);
-          console.log(">>> longitud de 'imagenes':", imagenes.length);
 
-          // Construir array de colores únicos en minúscula
+          // Colores en minúscula únicos
           const coloresUnicos = producto.colores
             ? [...new Set(producto.colores.split(',').map(c => c.trim().toLowerCase()))]
             : [];
 
-          // Construir array de tallas únicas en mayúscula
+          // Tallas en mayúscula únicas
           const tallasUnicas = producto.tallas
             ? [...new Set(producto.tallas.split(',').map(t => t.trim().toUpperCase()))]
             : [];
 
-          // 5) Calculamos precio y posible descuento
+          // 5) Calculamos precio y descuento
           const tieneDescuento = producto.promo && !isNaN(parseInt(producto.promo));
           const descuento = tieneDescuento ? parseInt(producto.promo) : 0;
           const precioOriginal = producto.precio;
@@ -431,7 +427,7 @@
             ? Math.round(precioOriginal * (1 - descuento / 100))
             : precioOriginal;
 
-          // 6) Generamos el HTML completo
+          // 6) Generamos el HTML
           container.innerHTML = `
             <div class="detalle-img">
               <div class="miniaturas">
@@ -490,14 +486,11 @@
                     <div class="colores" id="paletaColores">
                       ${coloresUnicos
                         .map(color => {
-                          // Traducir color español → CSS válido
-                          const cssColor = diccionarioColores[color] || null;
-                          // Si no existe en diccionario, dejamos fondo blanco
-                          const fondo = cssColor ? cssColor : "#ffffff";
+                          const cssColor = diccionarioColores[color] || '#ffffff';
                           return `
                             <div
                               class="color"
-                              style="background-color:${fondo}"
+                              style="background-color:${cssColor}"
                               title="${color}"
                               data-color="${color}"
                               onclick="seleccionarColor(this)"
@@ -534,7 +527,6 @@
               <div class="botones">
                 <button onclick="agregarAlCarrito()">Añadir al carrito</button>
                 <a href="${categoria}.html">Volver al catálogo</a>
-                <!-- Nuevo botón “Ver carrito” -->
                 <a href="carrito.html">Ver carrito</a>
               </div>
             </div>
@@ -586,17 +578,23 @@
       }
 
       // Volvemos a leer el producto completo desde IndexedDB para armar el objeto del carrito
-      const params = new URLSearchParams(window.location.search);
-      const categoria = params.get("categoria");
-      const id = parseInt(params.get("id"));
+      const params2 = new URLSearchParams(window.location.search);
+      const categoria2 = params2.get("categoria");
+      const id2 = parseInt(params2.get("id"));
 
       const requestDB2 = indexedDB.open("TALODB", 2);
       requestDB2.onsuccess = function(event) {
-        const db = event.target.result;
-        const tx = db.transaction(categoria, "readonly");
-        const store = tx.objectStore(categoria);
+        const db2 = event.target.result;
+        let tx2;
+        try {
+          tx2 = db2.transaction(categoria2, "readonly");
+        } catch {
+          alert("No se encontró la categoría al añadir al carrito.");
+          return;
+        }
+        const store2 = tx2.objectStore(categoria2);
 
-        store.get(id).onsuccess = function(evt) {
+        store2.get(id2).onsuccess = function(evt) {
           const producto = evt.target.result;
           if (!producto) {
             alert("El producto ya no existe.");
@@ -612,7 +610,7 @@
           alert("Producto añadido al carrito.");
         };
 
-        store.get(id).onerror = function(event) {
+        store2.get(id2).onerror = function(event) {
           console.error("Error al leer producto para carrito:", event.target.error);
           alert("No se pudo añadir al carrito.");
         };
