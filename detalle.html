@@ -10,9 +10,8 @@
        Estilos para detalle.html
        ========================== */
 
-    /* Reservar espacio para el header fijo */
     body {
-      padding-top: 80px; /* Ajusta si tu header cambia de tamaño */
+      padding-top: 80px;
       margin: 0;
       font-family: Arial, sans-serif;
       background-color: #f5f5f5;
@@ -20,23 +19,21 @@
       box-sizing: border-box;
     }
 
-    /* ------------ HEADER -------------- */
     header {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
-      height: 60px; /* altura del header */
+      height: 60px;
       background-color: #fff;
       border-bottom: 1px solid #000;
       display: flex;
       align-items: center;
-      justify-content: center; /* centra logo + título */
+      justify-content: center;
       z-index: 100;
       padding: 0 20px;
       box-sizing: border-box;
     }
-    /* Botón hamburguesa en el extremo izquierdo */
     .menu-toggle {
       position: absolute;
       left: 20px;
@@ -47,7 +44,6 @@
       cursor: pointer;
       z-index: 110;
     }
-    /* Logo + título centrados */
     #logo {
       display: flex;
       align-items: center;
@@ -61,13 +57,12 @@
       margin: 0;
       font-size: 1.8rem;
     }
-    /* Menú desplegable: debajo del header, alineado al botón hamburguesa */
     .menu-links {
       display: none;
       flex-direction: column;
       position: absolute;
-      top: 60px;   /* justo debajo del header */
-      left: 20px;  /* alineado con el botón hamburguesa */
+      top: 60px;
+      left: 20px;
       background-color: #000;
       border: 1px solid #fff;
       padding: 10px;
@@ -87,11 +82,6 @@
     .menu-links a:hover {
       color: #ccc;
     }
-    /* ---------------------------------- */
-
-    /* ==========================
-       Estilos generales de detalle
-       ========================== */
 
     .detalle-contenedor {
       max-width: 1000px;
@@ -105,7 +95,6 @@
       box-sizing: border-box;
     }
 
-    /* Contenedor de miniaturas (columna estrecha a la izquierda) */
     .detalle-img {
       flex: 1;
       display: flex;
@@ -113,20 +102,18 @@
       gap: 10px;
       box-sizing: border-box;
     }
-
     .miniaturas {
       display: flex;
       flex-direction: column;
       gap: 6px;
       max-height: 400px;
       overflow-y: auto;
-      width: 60px; /* ancho fijo para la columna de miniaturas */
+      width: 60px;
       box-sizing: border-box;
       border: 1px solid #000;
       padding: 4px;
       background-color: #f9f9f9;
     }
-
     .miniatura {
       width: 55px;
       height: 55px;
@@ -140,8 +127,6 @@
     .miniatura:hover {
       transform: scale(1.05);
     }
-
-    /* Imagen principal (lado derecho de miniaturas) */
     .imagen-principal-wrapper {
       flex: 3;
       display: flex;
@@ -152,7 +137,6 @@
       padding: 4px;
       background-color: #fff;
     }
-
     #imagenPrincipal {
       width: 100%;
       height: auto;
@@ -162,27 +146,23 @@
       box-sizing: border-box;
     }
 
-    /* Información del producto (columna derecha) */
     .detalle-info {
       flex: 1;
       display: flex;
       flex-direction: column;
       box-sizing: border-box;
     }
-
     .detalle-info h2 {
       font-size: 2rem;
       margin-bottom: 15px;
       text-align: center;
     }
-
     .detalle-info p {
       font-size: 1.1rem;
       margin: 5px 0;
       text-align: center;
     }
 
-    /* Bloque de colores */
     .colores {
       display: flex;
       gap: 10px;
@@ -199,7 +179,6 @@
       box-sizing: border-box;
     }
 
-    /* Bloque de tallas */
     .tallas {
       display: flex;
       flex-wrap: wrap;
@@ -208,7 +187,6 @@
       justify-content: center;
       box-sizing: border-box;
     }
-
     .talla {
       border: 1px solid #000;
       padding: 5px 12px;
@@ -217,13 +195,11 @@
       text-align: center;
       box-sizing: border-box;
     }
-
     .talla.selected {
       background-color: #000;
       color: #fff;
     }
 
-    /* Botones de acción */
     .botones {
       margin-top: auto;
       display: flex;
@@ -270,7 +246,6 @@
       }
     }
 
-    /* Pie de página */
     footer {
       text-align: center;
       margin-top: 20px;
@@ -294,16 +269,11 @@
        HEADER: logo + título + hamburguesa
        ============================== -->
   <header>
-    <!-- Botón hamburguesa a la izquierda -->
     <button class="menu-toggle" onclick="toggleMenu()">☰</button>
-
-    <!-- Logo + título centrado -->
     <div id="logo">
       <img src="imagenes/talo.png" alt="Logo Talø" />
       <h1>TALØ</h1>
     </div>
-
-    <!-- Menú desplegable -->
     <nav id="menu" class="menu-links">
       <a href="index.html">Inicio</a>
       <a href="camisas.html">Camisas</a>
@@ -323,162 +293,93 @@
   </footer>
 
   <script>
-    // -------------- HELPERS --------------
-
-    // 1) Abrir/cerrar menú hamburguesa
+    // ---------------------------------------
+    // Función para abrir/cerrar menú hamburguesa
+    // ---------------------------------------
     function toggleMenu() {
       document.getElementById("menu").classList.toggle("show");
     }
     window.toggleMenu = toggleMenu;
 
-    // 2) Diccionario Español → CSS válido (para colorear los círculos de “Colores”)
+    // Diccionario Español → CSS válido para colorear paleta
     const diccionarioColores = {
-      rojo:    "red",
-      verde:   "green",
-      azul:    "blue",
-      negro:   "black",
-      blanco:  "white",
-      amarillo:"yellow",
+      rojo: "red",
+      verde: "green",
+      azul: "blue",
+      negro: "black",
+      blanco: "white",
+      amarillo: "yellow",
       naranja: "orange",
-      morado:  "purple",
-      rosado:  "pink",
-      gris:    "gray",
-      marron:  "brown",
-      cian:    "cyan",
-      fucsia:  "magenta",
-      'marrón': "brown"
+      morado: "purple",
+      rosado: "pink",
+      gris: "gray",
+      marron: "brown",
+      cian: "cyan",
+      fucsia: "magenta",
+      marrón: "brown"
     };
 
-    // 3) Mostrar una imagen grande al hacer clic en una miniatura
-    function mostrarImagen(ruta) {
-      document.getElementById('imagenPrincipal').src = ruta;
-    }
-
-    // 4) Seleccionar color: contorno negro grueso + almacenar valor
-    function seleccionarColor(el) {
-      document.querySelectorAll('.color').forEach(e => {
-        e.style.outline = 'none';
-        e.style.border = '1px solid #000';
-      });
-      el.style.outline = '2px solid #000';
-      el.style.border = '3px solid #000';
-      document.getElementById('colorSeleccionado').value = el.dataset.color;
-    }
-
-    // 5) Seleccionar talla: agregar/remover clase “selected”
-    function seleccionarTalla(el) {
-      document.querySelectorAll('.talla').forEach(e => e.classList.remove('selected'));
-      el.classList.add('selected');
-      document.getElementById('tallaSeleccionada').value = el.dataset.talla;
-    }
-
-    // 6) Añadir al carrito: verifica selección y guarda en localStorage
-    function agregarAlCarrito() {
-      const colorElegido = document.getElementById("colorSeleccionado")?.value;
-      const tallaElegida = document.getElementById("tallaSeleccionada")?.value;
-
-      const necesitaColor = document.getElementById("paletaColores") !== null;
-      const necesitaTalla = document.getElementById("listaTallas") !== null;
-
-      if ((necesitaColor && !colorElegido) || (necesitaTalla && !tallaElegida)) {
-        alert("Por favor selecciona color y/o talla antes de añadir al carrito.");
-        return;
-      }
-
-      // Recuperamos “categoria” e “id” directamente de la URL
-      const params2 = new URLSearchParams(window.location.search);
-      const categoria2 = params2.get("categoria");
-      const id2 = params2.get("id"); // ahora lo mantenemos como cadena
-
-      // Hacemos fetch al backend para recuperar el producto completo
-      fetch(`${BACKEND_URL}/api/products/${id2}`)
-        .then(r => {
-          if (!r.ok) throw new Error("Producto no encontrado en servidor");
-          return r.json();
-        })
-        .then(producto => {
-          // Armamos la copia a guardar en carrito
-          const copia = { ...producto };
-          if (necesitaColor) copia.colorElegido = colorElegido;
-          if (necesitaTalla) copia.tallaElegida = tallaElegida;
-
-          const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-          carrito.push(copia);
-          localStorage.setItem("carrito", JSON.stringify(carrito));
-          alert("Producto añadido al carrito.");
-        })
-        .catch(err => {
-          console.error("No se pudo añadir al carrito:", err);
-          alert("Error al añadir al carrito.");
-        });
-    }
-
-
-    // -------------- PRINCIPAL --------------
-
-    // 7) Extraer “categoria” e “id” de la URL
+    // 1) Leemos parámetros de la URL:
     const params = new URLSearchParams(window.location.search);
-    const categoria = params.get("categoria");
-    const id        = params.get("id"); // mantenerlo como cadena porque el backend usa IDs de Mongo
+    const categoria = params.get("categoria"); // ej. "camisas", "shorts", etc.
+    const idParam   = params.get("id");        // valor del id en texto
+    const id        = idParam !== null ? idParam.trim() : null;
 
     const container = document.getElementById("detalleProducto");
 
-    // 8) Validar que vengan ambos parámetros
     if (!categoria || !id) {
-      container.innerHTML =
-        "<p style='text-align:center; font-size:1.2rem;'>URL inválida o faltan parámetros.</p>";
+      // URL inválida o no pasaron parámetros
+      container.innerHTML = "<p style='text-align:center; font-size:1.2rem;'>URL inválida o faltan parámetros.</p>";
     } else {
-      // 9) Hacemos fetch al backend para obtener el producto por _id
-      //    (no usamos IndexedDB, sino la API que ya tienes en el servidor)
-      window.BACKEND_URL = "https://taloadmin-backend.onrender.com";
+      // 2) Hacemos fetch a nuestro BACKEND para obtener el producto por ID
+      const BACKEND_URL = "https://taloadmin-backend.onrender.com"; 
       fetch(`${BACKEND_URL}/api/products/${id}`)
-        .then(response => {
-          if (response.status === 404) {
-            throw new Error("Producto no encontrado.");
+        .then(resp => {
+          if (!resp.ok) {
+            throw new Error("Producto no encontrado en el servidor.");
           }
-          return response.json();
+          return resp.json();
         })
         .then(producto => {
-          // Extraer datos del JSON recibido
+          // 3) Verificar categoría coincide
+          //    (en tu modelo, seguro tienes un campo producto.categoria)
+          if (!producto || producto.categoria !== categoria) {
+            container.innerHTML = "<p style='text-align:center; font-size:1.2rem;'>Producto no encontrado o categoría errónea.</p>";
+            return;
+          }
+
+          // 4) Preparamos arrays: imágenes, colores y tallas
           const imagenes = Array.isArray(producto.imagenes) ? producto.imagenes : [];
-          // El back devuelve “colores” y “tallas” como arrays. Convertimos a cadenas si fuese necesario:
-          let coloresUnicos = [];
-          if (Array.isArray(producto.colores)) {
-            coloresUnicos = producto.colores
-              .map(c => (""+c).trim().toLowerCase())
-              .filter((v,i,a) => a.indexOf(v) === i);
-          }
+          const coloresUnicos = producto.colores
+            ? [...new Set(producto.colores.map(c => c.trim().toLowerCase()))]
+            : [];
+          const tallasUnicas = producto.tallas
+            ? [...new Set(producto.tallas.map(t => t.trim().toUpperCase()))]
+            : [];
 
-          let tallasUnicas = [];
-          if (Array.isArray(producto.tallas)) {
-            tallasUnicas = producto.tallas
-              .map(t => (""+t).trim().toUpperCase())
-              .filter((v,i,a) => a.indexOf(v) === i);
-          }
-
-          // Cálculo de precio y descuento
+          // 5) Calculamos precios y descuento
           const tieneDescuento = producto.promo && !isNaN(parseInt(producto.promo));
-          const descuento      = tieneDescuento ? parseInt(producto.promo) : 0;
+          const descuento = tieneDescuento ? parseInt(producto.promo) : 0;
           const precioOriginal = producto.precio;
-          const precioFinal    = tieneDescuento
-                                ? Math.round(precioOriginal * (1 - descuento / 100))
-                                : precioOriginal;
+          const precioFinal = tieneDescuento
+            ? Math.round(precioOriginal * (1 - descuento / 100))
+            : precioOriginal;
 
-          // 10) Montar el HTML dentro de “container”
+          // 6) Renderizamos todo el detalle en una sola inyección de innerHTML
           container.innerHTML = `
             <div class="detalle-img">
               <div class="miniaturas">
                 ${imagenes
                   .map(
-                    src => `
-                  <img
-                    src="${src}"
-                    class="miniatura"
-                    onclick="mostrarImagen('${src}')"
-                  >
-                `
+                    img =>
+                      `<img
+                        src="${img}"
+                        class="miniatura"
+                        onclick="mostrarImagen('${img}')"
+                        alt="miniatura"
+                      >`
                   )
-                  .join("")}
+                  .join('')}
               </div>
               <div class="imagen-principal-wrapper">
                 <img
@@ -534,11 +435,11 @@
                             ></div>
                           `;
                         })
-                        .join("")}
+                        .join('')}
                     </div>
                     <input type="hidden" id="colorSeleccionado" value="">
                   `
-                  : ""
+                  : ``
               }
               ${
                 tallasUnicas.length > 0
@@ -548,18 +449,18 @@
                       ${tallasUnicas
                         .map(
                           talla => `
-                        <div
-                          class="talla"
-                          onclick="seleccionarTalla(this)"
-                          data-talla="${talla}"
-                        >${talla}</div>
-                      `
+                            <div
+                              class="talla"
+                              onclick="seleccionarTalla(this)"
+                              data-talla="${talla}"
+                            >${talla}</div>
+                          `
                         )
-                        .join("")}
+                        .join('')}
                     </div>
                     <input type="hidden" id="tallaSeleccionada" value="">
                   `
-                  : ""
+                  : ``
               }
               <div class="botones">
                 <button onclick="agregarAlCarrito()">Añadir al carrito</button>
@@ -569,11 +470,71 @@
             </div>
           `;
         })
-        .catch(error => {
-          console.error("Error al cargar el detalle:", error);
-          container.innerHTML =
-            "<p style='text-align:center; font-size:1.2rem;'>Producto no encontrado.</p>";
+        .catch(err => {
+          console.error(err);
+          container.innerHTML = "<p style='text-align:center; font-size:1.2rem;'>Producto no encontrado.</p>";
         });
+    }
+
+    // 7) Funciones auxiliares para seleccionar color/talla y añadir al carrito
+
+    function seleccionarColor(el) {
+      document.querySelectorAll('.color').forEach(e => {
+        e.style.outline = 'none';
+        e.style.border = '1px solid #000';
+      });
+      el.style.outline = '2px solid #000';
+      el.style.border  = '3px solid #000';
+      document.getElementById('colorSeleccionado').value = el.dataset.color;
+    }
+
+    function seleccionarTalla(el) {
+      document.querySelectorAll('.talla').forEach(e => e.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById('tallaSeleccionada').value = el.dataset.talla;
+    }
+
+    function agregarAlCarrito() {
+      const colorElegido = document.getElementById("colorSeleccionado")?.value;
+      const tallaElegida = document.getElementById("tallaSeleccionada")?.value;
+
+      const necesitaColor = document.getElementById("paletaColores") !== null;
+      const necesitaTalla = document.getElementById("listaTallas") !== null;
+
+      if ((necesitaColor && !colorElegido) || (necesitaTalla && !tallaElegida)) {
+        alert("Por favor selecciona color y/o talla antes de añadir al carrito.");
+        return;
+      }
+
+      // Volvemos a leer el producto completo desde la URL
+      const params = new URLSearchParams(window.location.search);
+      const categoria = params.get("categoria");
+      const id = params.get("id");
+
+      // Hacemos otra vez fetch al servidor para obtener la info completa
+      const BACKEND_URL = "https://taloadmin-backend.onrender.com";
+      fetch(`${BACKEND_URL}/api/products/${id}`)
+        .then(resp => {
+          if (!resp.ok) throw new Error("No se pudo leer producto para carrito.");
+          return resp.json();
+        })
+        .then(producto => {
+          const copia = { ...producto };
+          if (necesitaColor) copia.colorElegido = colorElegido;
+          if (necesitaTalla) copia.tallaElegida = tallaElegida;
+          const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+          carrito.push(copia);
+          localStorage.setItem("carrito", JSON.stringify(carrito));
+          alert("Producto añadido al carrito.");
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Error al añadir al carrito.");
+        });
+    }
+
+    function mostrarImagen(ruta) {
+      document.getElementById('imagenPrincipal').src = ruta;
     }
   </script>
 </body>
