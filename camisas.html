@@ -18,7 +18,7 @@
       background-color: #f5f5f5;
       color: #000;
     }
-    
+
 
     /* ------------ HEADER -------------- */
     header {
@@ -683,31 +683,29 @@ const diccionarioColores = {
     }
 
     // 8) Abrir formulario para editar (GET y cargar datos)
-    async function abrirFormularioEditar(id) {
-      if (!tieneTokenValido()) return;
-      try {
-        const resp = await fetch(`${BACKEND_URL}/api/products/${id}`);
-        if (!resp.ok) throw new Error("No se pudo obtener el producto.");
-        const producto = await resp.json();
+async function abrirFormularioEditar(id) {
+  if (!tieneTokenValido()) return;
+  try {
+    const resp = await fetch(`${BACKEND_URL}/api/products/${id}`);
+    if (!resp.ok) throw new Error("No se pudo obtener el producto.");
+    const producto = await resp.json();
 
-        formTitulo.textContent = "Editar producto";
-        submitBtn.textContent = "Guardar cambios";
-        document.getElementById('productoId').value = producto._id;
-        document.getElementById('nombre').value = producto.nombre;
-        document.getElementById('descripcion').value = producto.descripcion || "";
-        document.getElementById('tallas').value = producto.tallas.join(',');
-        document.getElementById('colores').value = producto.colores.join(',');
-        document.getElementById('precio').value = producto.precio;
-        document.getElementById('promo').value = producto.promo || "";
-        inputImagenes.required = false; // no forzar nueva imagen al editar
+    formTitulo.textContent = "Editar producto";
+    submitBtn.textContent = "Guardar cambios";
+    document.getElementById('productoId').value = producto._id;
+    document.getElementById('nombre').value = producto.nombre;
+    document.getElementById('descripcion').value = producto.descripcion || "";
+    document.getElementById('precio').value = producto.precio;
+    document.getElementById('promo').value = producto.promo || "";
+    inputImagenes.required = false;
+    form.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (error) {
+    console.error("Error al cargar producto para edición:", error);
+    alert("Error al cargar datos para edición.");
+  }
+}
 
-        form.style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } catch (error) {
-        console.error("Error al cargar producto para edición:", error);
-        alert("Error al cargar datos para edición.");
-      }
-    }
 
     // 9) Abrir formulario para agregar (resetea campos)
     function abrirFormularioParaAgregar() {
@@ -777,7 +775,21 @@ const diccionarioColores = {
           console.error("Error al procesar imágenes:", err);
           alert("Error al procesar las imágenes.");
           return;
-        }
+        }} else {
+  // EDICIÓN: si no se añaden nuevas imágenes, mantener las existentes
+  if (!archivos || archivos.length === 0) {
+    try {
+      const resp = await fetch(`${BACKEND_URL}/api/products/${idEdicion}`);
+      if (!resp.ok) throw new Error("No se pudo recuperar las imágenes existentes.");
+      const producto = await resp.json();
+      imagenesArray = producto.imagenes || [];
+    } catch (err) {
+      console.error("Error al recuperar imágenes previas:", err);
+      alert("Error al mantener imágenes anteriores.");
+      return;
+    }
+  }
+
       }
 
       // Leer campos del formulario
