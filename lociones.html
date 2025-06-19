@@ -304,8 +304,6 @@
     <input type="hidden" id="productoId" value="">
     <input type="text" id="nombre" placeholder="Nombre del producto" required />
     <input type="text" id="descripcion" placeholder="Descripción del producto" />
-    <input type="text" id="tallas" placeholder="Tallas (ej: S, M, L)" />
-    <input type="text" id="colores" placeholder="Colores (ej: Rojo, Verde, Negro)" />
     <input type="number" id="precio" placeholder="Precio en pesos" required />
     <input type="text" id="promo" placeholder="Promoción (ej: 10, opcional)" />
     <input type="file" id="imagenes" accept="image/*" multiple />
@@ -777,10 +775,9 @@
       // Leer campos del formulario
       const nombre      = document.getElementById('nombre').value;
       const descripcion = document.getElementById('descripcion').value;
-      const tallasArr   = document.getElementById('tallas').value
-                           .split(',').map(s => s.trim());
-      const coloresArr  = document.getElementById('colores').value
-                           .split(',').map(s => s.trim());
+const tallasArr = [];
+const coloresArr = [];
+
       const precio      = parseFloat(document.getElementById('precio').value);
       const promo       = document.getElementById('promo').value;
       const token       = localStorage.getItem('admin_jwt');
