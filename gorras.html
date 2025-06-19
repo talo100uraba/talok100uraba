@@ -769,8 +769,19 @@ async function abrirFormularioEditar(id) {
           alert("Error al procesar las imágenes.");
           return;
         }
-        }  else {
-    // Si hay nuevas imágenes, las procesamos y añadimos a las anteriores
+        } else {
+  if (!archivos || archivos.length === 0) {
+    try {
+      const resp = await fetch(`${BACKEND_URL}/api/products/${idEdicion}`);
+      if (!resp.ok) throw new Error("No se pudo recuperar las imágenes existentes.");
+      const producto = await resp.json();
+      imagenesArray = producto.imagenes || [];
+    } catch (err) {
+      console.error("Error al recuperar imágenes previas:", err);
+      alert("Error al mantener imágenes anteriores.");
+      return;
+    }
+  } else {
     try {
       const promesas = Array.from(archivos).map(file => {
         return new Promise((resolve, reject) => {
@@ -789,13 +800,20 @@ async function abrirFormularioEditar(id) {
         .filter(r => r.status === "fulfilled")
         .map(r => r.value);
 
-      imagenesArray = imagenesArray.concat(nuevas);
+      const resp = await fetch(`${BACKEND_URL}/api/products/${idEdicion}`);
+      if (!resp.ok) throw new Error("No se pudo recuperar las imágenes existentes.");
+      const producto = await resp.json();
+      const anteriores = producto.imagenes || [];
+
+      imagenesArray = anteriores.concat(nuevas);
     } catch (err) {
-      console.error("Error al procesar nuevas imágenes:", err);
+      console.error("Error al añadir nuevas imágenes:", err);
       alert("Error al añadir nuevas imágenes.");
       return;
     }
   }
+}
+
 
 
       // Leer campos del formulario
