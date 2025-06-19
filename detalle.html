@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Detalle del Producto - TALØ</title>
+  <link rel="stylesheet" href="estilos_animaciones.css">
+  <style>
+    /* ==========================
+       Estilos para detalle.html
+       ========================== */
+
+    body {
+      padding-top: 80px;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      color: #000;
+      box-sizing: border-box;
+    }
+
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background-color: #fff;
+      border-bottom: 1px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+    .menu-toggle {
+      position: absolute;
+      left: 20px;
+      font-size: 2rem;
+      background: none;
+      border: none;
+      color: #000;
+      cursor: pointer;
+      z-index: 110;
+    }
+    #logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #logo img {
+      width: 50px;
+      height: 50px;
+    }
+    #logo h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    .menu-links {
+      display: none;
+      flex-direction: column;
+      position: absolute;
+      top: 60px;
+      left: 20px;
+      background-color: #000;
+      border: 1px solid #fff;
+      padding: 10px;
+      z-index: 300;
+      box-sizing: border-box;
+    }
+    .menu-links.show {
+      display: flex;
+    }
+    .menu-links a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      transition: color 0.3s;
+    }
+    .menu-links a:hover {
+      color: #ccc;
+    }
+
+    .detalle-contenedor {
+      max-width: 1000px;
+      margin: 60px auto;
+      display: flex;
+      flex-direction: row;
+      gap: 30px;
+      padding: 30px;
+      background-color: #fff;
+      border: 2px solid #000;
+      box-sizing: border-box;
+    }
+
+    .detalle-img {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      box-sizing: border-box;
+    }
+    .miniaturas {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 400px;
+      overflow-y: auto;
+      width: 60px;
+      box-sizing: border-box;
+      border: 1px solid #000;
+      padding: 4px;
+      background-color: #f9f9f9;
+    }
+    .miniatura {
+      width: 55px;
+      height: 55px;
+      object-fit: cover;
+      border: 1px solid #000;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: transform 0.2s ease;
+      box-sizing: border-box;
+    }
+    .miniatura:hover {
+      transform: scale(1.05);
+    }
+    .imagen-principal-wrapper {
+      flex: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      border: 1px solid #000;
+      padding: 4px;
+      background-color: #fff;
+    }
+    #imagenPrincipal {
+      width: 100%;
+      height: auto;
+      max-height: 500px;
+      object-fit: contain;
+      border: 2px solid #000;
+      box-sizing: border-box;
+    }
+
+    .detalle-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+    .detalle-info h2 {
+      font-size: 2rem;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .detalle-info p {
+      font-size: 1.1rem;
+      margin: 5px 0;
+      text-align: center;
+    }
+
+    .colores {
+      display: flex;
+      gap: 10px;
+      margin: 10px auto;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .color {
+      width: 25px;
+      height: 25px;
+      border: 1px solid #000;
+      border-radius: 50%;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    .tallas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px auto;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .talla {
+      border: 1px solid #000;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 1rem;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    .talla.selected {
+      background-color: #000;
+      color: #fff;
+    }
+
+    .botones {
+      margin-top: auto;
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .botones button,
+    .botones a {
+      background-color: #000;
+      color: #fff;
+      padding: 10px 25px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      border-radius: 3px;
+      box-sizing: border-box;
+    }
+    .botones a {
+      display: inline-block;
+    }
+
+    @media screen and (max-width: 768px) {
+      .detalle-contenedor {
+        flex-direction: column;
+      }
+      .detalle-img {
+        flex-direction: column;
+      }
+      .miniaturas {
+        flex-direction: row;
+        max-height: 60px;
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+      }
+      .miniatura {
+        width: 45px;
+        height: 45px;
+      }
+      #imagenPrincipal {
+        max-height: 300px;
+      }
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 20px;
+      padding: 20px 0;
+      background-color: #000;
+      color: #fff;
+    }
+    footer h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.2rem;
+    }
+    footer p {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ==============================
+       HEADER: logo + título + hamburguesa
+       ============================== -->
+  <header>
+    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+    <div id="logo">
+      <img src="imagenes/talo.png" alt="Logo Talø" />
+      <h1>TALØ</h1>
+    </div>
+    <nav id="menu" class="menu-links">
+      <a href="index.html">Inicio</a>
+      <a href="camisas.html">Camisas</a>
+      <a href="shorts.html">Shorts</a>
+      <a href="gorras.html">Gorras</a>
+      <a href="lociones.html">Lociones</a>
+      <a href="promociones.html">Promociones</a>
+    </nav>
+  </header>
+
+  <!-- Contenedor donde se inyectará todo el detalle -->
+  <div class="detalle-contenedor" id="detalleProducto"></div>
+
+  <footer>
+    <h3>Acerca de Nosotros</h3>
+    <p>Gracias por visitar TALØ. Calidad y estilo sin complicaciones.</p>
+  </footer>
+
+  <script>
+    // ---------------------------------------
+    // Función para abrir/cerrar menú hamburguesa
+    // ---------------------------------------
+    function toggleMenu() {
+      document.getElementById("menu").classList.toggle("show");
+    }
+    window.toggleMenu = toggleMenu;
+
+    // Diccionario Español → CSS válido para colorear paleta
+    const diccionarioColores = {
+      rojo: "red",
+      verde: "green",
+      azul: "blue",
+      negro: "black",
+      blanco: "white",
+      amarillo: "yellow",
+      naranja: "orange",
+      morado: "purple",
+      rosado: "pink",
+      gris: "gray",
+      marron: "brown",
+      cian: "cyan",
+      fucsia: "magenta",
+      marrón: "brown"
+    };
+
+    // 1) Leemos parámetros de la URL:
+    const params = new URLSearchParams(window.location.search);
+    const categoria = params.get("categoria"); // ej. "camisas", "shorts", etc.
+    const idParam   = params.get("id");        // valor del id en texto
+    const id        = idParam !== null ? idParam.trim() : null;
+
+    const container = document.getElementById("detalleProducto");
+
+    if (!categoria || !id) {
+      // URL inválida o no pasaron parámetros
+      container.innerHTML = "<p style='text-align:center; font-size:1.2rem;'>URL inválida o faltan parámetros.</p>";
+    } else {
+      // 2) Hacemos fetch a nuestro BACKEND para obtener el producto por ID
+      const BACKEND_URL = "https://taloadmin-backend.onrender.com"; 
+      fetch(`${BACKEND_URL}/api/products/${id}`)
+        .then(resp => {
+          if (!resp.ok) {
+            throw new Error("Producto no encontrado en el servidor.");
+          }
+          return resp.json();
+        })
+        .then(producto => {
+          // 3) Verificar categoría coincide
+          //    (en tu modelo, seguro tienes un campo producto.categoria)
+          if (!producto || producto.categoria !== categoria) {
+            container.innerHTML = "<p style='text-align:center; font-size:1.2rem;'>Producto no encontrado o categoría errónea.</p>";
+            return;
+          }
+
+          // 4) Preparamos arrays: imágenes, colores y tallas
+          const imagenes = Array.isArray(producto.imagenes) ? producto.imagenes : [];
+          const coloresUnicos = producto.colores
+            ? [...new Set(producto.colores.map(c => c.trim().toLowerCase()))]
+            : [];
+          const tallasUnicas = producto.tallas
+            ? [...new Set(producto.tallas.map(t => t.trim().toUpperCase()))]
+            : [];
+
+          // 5) Calculamos precios y descuento
+          const tieneDescuento = producto.promo && !isNaN(parseInt(producto.promo));
+          const descuento = tieneDescuento ? parseInt(producto.promo) : 0;
+          const precioOriginal = producto.precio;
+          const precioFinal = tieneDescuento
+            ? Math.round(precioOriginal * (1 - descuento / 100))
+            : precioOriginal;
+
+          // 6) Renderizamos todo el detalle en una sola inyección de innerHTML
+          container.innerHTML = `
+            <div class="detalle-img">
+              <div class="miniaturas">
+                ${imagenes
+                  .map(
+                    img =>
+                      `<img
+                        src="${img}"
+                        class="miniatura"
+                        onclick="mostrarImagen('${img}')"
+                        alt="miniatura"
+                      >`
+                  )
+                  .join('')}
+              </div>
+              <div class="imagen-principal-wrapper">
+                <img
+                  id="imagenPrincipal"
+                  src="${imagenes[0] || ''}"
+                  alt="${producto.nombre}"
+                >
+              </div>
+            </div>
+            <div class="detalle-info">
+              <h2>${producto.nombre}</h2>
+              ${
+                tieneDescuento
+                  ? `
+                    <p style="font-size:1.5rem; font-weight:bold;">
+                      $${precioFinal.toLocaleString()}
+                    </p>
+                    <p style="text-decoration: line-through; color: gray;">
+                      $${precioOriginal.toLocaleString()}
+                    </p>
+                    <p style="
+                      background: #000;
+                      color: #fff;
+                      display: inline-block;
+                      padding: 2px 6px;
+                      font-size: 0.9rem;
+                      margin-top: 5px;
+                    ">
+                      -${descuento}%
+                    </p>
+                  `
+                  : `
+                    <p style="font-size:1.5rem; font-weight:bold;">
+                      $${producto.precio.toLocaleString()}
+                    </p>
+                  `
+              }
+              ${
+                coloresUnicos.length > 0
+                  ? `
+                    <p style="margin-top:10px;"><strong>Colores:</strong></p>
+                    <div class="colores" id="paletaColores">
+                      ${coloresUnicos
+                        .map(color => {
+                          const cssColor = diccionarioColores[color] || "#ffffff";
+                          return `
+                            <div
+                              class="color"
+                              style="background-color:${cssColor}"
+                              title="${color}"
+                              data-color="${color}"
+                              onclick="seleccionarColor(this)"
+                            ></div>
+                          `;
+                        })
+                        .join('')}
+                    </div>
+                    <input type="hidden" id="colorSeleccionado" value="">
+                  `
+                  : ``
+              }
+              ${
+                tallasUnicas.length > 0
+                  ? `
+                    <p style="margin-top:10px;"><strong>Tallas:</strong></p>
+                    <div class="tallas" id="listaTallas">
+                      ${tallasUnicas
+                        .map(
+                          talla => `
+                            <div
+                              class="talla"
+                              onclick="seleccionarTalla(this)"
+                              data-talla="${talla}"
+                            >${talla}</div>
+                          `
+                        )
+                        .join('')}
+                    </div>
+                    <input type="hidden" id="tallaSeleccionada" value="">
+                  `
+                  : ``
+              }
+              <div class="botones">
+                <button onclick="agregarAlCarrito()">Añadir al carrito</button>
+                <a href="${categoria}.html">Volver al catálogo</a>
+                <a href="carrito.html">Ver carrito</a>
+              </div>
+            </div>
+          `;
+        })
+        .catch(err => {
+          console.error(err);
+          container.innerHTML = "<p style='text-align:center; font-size:1.2rem;'>Producto no encontrado.</p>";
+        });
+    }
+
+    // 7) Funciones auxiliares para seleccionar color/talla y añadir al carrito
+
+    function seleccionarColor(el) {
+      document.querySelectorAll('.color').forEach(e => {
+        e.style.outline = 'none';
+        e.style.border = '1px solid #000';
+      });
+      el.style.outline = '2px solid #000';
+      el.style.border  = '3px solid #000';
+      document.getElementById('colorSeleccionado').value = el.dataset.color;
+    }
+
+    function seleccionarTalla(el) {
+      document.querySelectorAll('.talla').forEach(e => e.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById('tallaSeleccionada').value = el.dataset.talla;
+    }
+
+    function agregarAlCarrito() {
+      const colorElegido = document.getElementById("colorSeleccionado")?.value;
+      const tallaElegida = document.getElementById("tallaSeleccionada")?.value;
+
+      const necesitaColor = document.getElementById("paletaColores") !== null;
+      const necesitaTalla = document.getElementById("listaTallas") !== null;
+
+      if ((necesitaColor && !colorElegido) || (necesitaTalla && !tallaElegida)) {
+        alert("Por favor selecciona color y/o talla antes de añadir al carrito.");
+        return;
+      }
+
+      // Volvemos a leer el producto completo desde la URL
+      const params = new URLSearchParams(window.location.search);
+      const categoria = params.get("categoria");
+      const id = params.get("id");
+
+      // Hacemos otra vez fetch al servidor para obtener la info completa
+      const BACKEND_URL = "https://taloadmin-backend.onrender.com";
+      fetch(`${BACKEND_URL}/api/products/${id}`)
+        .then(resp => {
+          if (!resp.ok) throw new Error("No se pudo leer producto para carrito.");
+          return resp.json();
+        })
+        .then(producto => {
+          const copia = { ...producto };
+          if (necesitaColor) copia.colorElegido = colorElegido;
+          if (necesitaTalla) copia.tallaElegida = tallaElegida;
+          const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+          carrito.push(copia);
+          localStorage.setItem("carrito", JSON.stringify(carrito));
+          alert("Producto añadido al carrito.");
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Error al añadir al carrito.");
+        });
+    }
+
+    function mostrarImagen(ruta) {
+      document.getElementById('imagenPrincipal').src = ruta;
+    }
+  </script>
+</body>
+</html>

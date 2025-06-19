@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Carrito - TALØ</title>
+  <link rel="stylesheet" href="estilos_animaciones.css" />
+  <style>
+    /* ================================
+       Estilos específicos para carrito.html
+       ================================ */
+
+    /* Reservar espacio para el header fijo */
+    body {
+      padding-top: 80px; /* Ajustar según la altura real del header */
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      color: #000;
+    }
+
+    /* ------------ HEADER -------------- */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 60px; /* altura del header */
+      background-color: #fff;
+      border-bottom: 1px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center; /* Centra logo + título */
+      z-index: 100;
+      box-sizing: border-box;
+      padding: 0 20px;
+    }
+    .menu-toggle {
+      position: absolute;
+      left: 20px;
+      font-size: 2rem;
+      background: none;
+      border: none;
+      color: #000;
+      cursor: pointer;
+      z-index: 110;
+    }
+    #logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #logo img {
+      width: 70px;
+      height: 70px;
+    }
+    #logo h1 {
+      font-size: 2.5rem;
+      margin: 0;
+    }
+    .menu-links {
+      display: none;
+      flex-direction: column;
+      position: absolute;
+      top: 60px; /* justo debajo del header */
+      left: 20px; /* alineado con el icono hamburguesa */
+      background-color: #000;
+      border: 1px solid #fff;
+      padding: 10px;
+      z-index: 300;
+      box-sizing: border-box;
+    }
+    .menu-links.show {
+      display: flex;
+    }
+    .menu-links a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      transition: color 0.3s;
+    }
+    .menu-links a:hover {
+      color: #ccc;
+    }
+    /* ---------------------------------- */
+
+    /* Contenedor general del carrito */
+    .carrito-container {
+      max-width: 1000px;
+      margin: 20px auto 40px auto;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+
+    .carrito-titulo {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    /* Cada item del carrito */
+    .item-carrito {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+      background-color: #fff;
+      border: 1px solid #000;
+      padding: 15px;
+      margin-bottom: 15px;
+      align-items: center;
+      box-sizing: border-box;
+      position: relative;
+    }
+    .item-carrito img {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border: 2px solid #000;
+      box-sizing: border-box;
+    }
+    .item-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-sizing: border-box;
+    }
+    .item-info h3 {
+      font-size: 1.3rem;
+      margin: 0;
+    }
+    .item-info p {
+      font-size: 1rem;
+      margin: 0;
+    }
+    .item-detalle {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      font-size: 0.95rem;
+    }
+    .item-detalle span {
+      background-color: #000;
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.85rem;
+    }
+
+    /* Botón eliminar dentro de cada item */
+    .btn-eliminar-item {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: #c00;
+      cursor: pointer;
+    }
+
+    /* Control de cantidad */
+    .cantidad-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .cantidad-control input {
+      width: 50px;
+      text-align: center;
+      font-size: 1rem;
+      padding: 4px;
+      border: 1px solid #000;
+      border-radius: 3px;
+    }
+    .cantidad-control button {
+      background-color: #000;
+      color: #fff;
+      border: none;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      border-radius: 3px;
+    }
+
+    /* Resumen de totales */
+    .resumen {
+      background-color: #fff;
+      border: 1px solid #000;
+      padding: 15px;
+      margin-top: 20px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    .resumen p {
+      margin: 6px 0;
+      font-size: 1.05rem;
+    }
+    .resumen .ahorro {
+      font-weight: bold;
+      color: #c00;
+    }
+
+    /* Mensaje cuando el carrito está vacío */
+    .vacio {
+      text-align: center;
+      font-size: 1.2rem;
+      margin: 40px 0;
+    }
+
+    /* Contenedor de botones finales */
+    .botones-final {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 30px;
+    }
+    .botones-final button,
+    .botones-final a {
+      background-color: #000;
+      color: #fff;
+      padding: 12px 25px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      border-radius: 3px;
+      box-sizing: border-box;
+    }
+    .botones-final a {
+      display: inline-block;
+      text-align: center;
+    }
+
+    /* Responsive */
+    @media screen and (max-width: 768px) {
+      .item-carrito {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .item-carrito img {
+        width: 100%;
+        height: auto;
+      }
+      .item-info {
+        width: 100%;
+      }
+      .botones-final {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ==============================
+       HEADER: LOGO + TÍTULO + HAMBURGUESA
+       ============================== -->
+  <header>
+    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+    <div id="logo">
+      <img src="imagenes/talo.png" alt="Logo Talø" />
+      <h1>TALØ</h1>
+    </div>
+    <nav id="menu" class="menu-links">
+      <a href="index.html">Inicio</a>
+      <a href="camisas.html">Camisas</a>
+      <a href="shorts.html">Shorts</a>
+      <a href="gorras.html">Gorras</a>
+      <a href="lociones.html">Lociones</a>
+      <a href="promociones.html">Promociones</a>
+    </nav>
+  </header>
+
+  <!-- ================================
+       Contenido del Carrito
+       ================================ -->
+  <div class="carrito-container">
+    <h2 class="carrito-titulo">Tu Carrito de Compras</h2>
+
+    <!-- Aquí se inyectarán los items desde JavaScript -->
+    <div id="itemsCarrito"></div>
+
+    <!-- Resumen de totales -->
+    <div id="resumenTotales" class="resumen" style="display: none;">
+      <p>Total sin descuento: <span id="totalOriginal">$0</span></p>
+      <p>Total con descuento: <span id="totalFinal">$0</span></p>
+      <p class="ahorro">Te ahorras: <span id="ahorro">$0</span></p>
+    </div>
+
+    <!-- Botones finales: Pagar y Volver al inicio -->
+    <div class="botones-final" id="contenedorBotones" style="display: none;">
+      <button id="btnPagar">Pagar</button>
+      <a href="index.html" id="btnInicio">Volver al Inicio</a>
+    </div>
+  </div>
+
+  <footer>
+    <h3>Acerca de Nosotros</h3>
+    <p>Gracias por visitar TALØ. Calidad y estilo sin complicaciones.</p>
+  </footer>
+
+  <script>
+    // Función para mostrar/ocultar menú hamburguesa
+    function toggleMenu() {
+      document.getElementById("menu").classList.toggle("show");
+    }
+    window.toggleMenu = toggleMenu;
+
+    // Número de WhatsApp del vendedor (en formato internacional sin símbolos)
+    // Ejemplo para Colombia: "573243799852"
+    const whatsappNumber = "573243799852";
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const contenedorItems   = document.getElementById("itemsCarrito");
+      const contenedorBotones = document.getElementById("contenedorBotones");
+      const btnPagar          = document.getElementById("btnPagar");
+      const resumenDiv        = document.getElementById("resumenTotales");
+
+      // Leer arreglo "carrito" desde localStorage; si no existe, inicializar como arreglo vacío
+      let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+
+      // Guardar carrito actualizado en localStorage
+      function guardarCarrito() {
+        localStorage.setItem("carrito", JSON.stringify(carrito));
+      }
+
+      // Eliminar un ítem del carrito por índice
+      function eliminarItem(index) {
+        carrito.splice(index, 1);
+        guardarCarrito();
+        renderizarCarrito();
+      }
+
+      // Cambiar cantidad de un ítem (index) a nuevaCantidad
+      function cambiarCantidad(index, nuevaCantidad) {
+        // Asegurarnos que sea número >= 1
+        nuevaCantidad = parseInt(nuevaCantidad);
+        if (isNaN(nuevaCantidad) || nuevaCantidad < 1) {
+          return;
+        }
+        carrito[index].cantidad = nuevaCantidad;
+        guardarCarrito();
+        renderizarCarrito();
+      }
+
+      // Construir y mostrar el carrito en pantalla
+      function renderizarCarrito() {
+        contenedorItems.innerHTML = "";
+
+        if (carrito.length === 0) {
+          // Si el carrito está vacío, mostrar mensaje y botón "Volver al inicio"
+          contenedorItems.innerHTML = `
+            <p class="vacio">Tu carrito está vacío.</p>
+            <div class="botones-final" style="justify-content: center;">
+              <a href="index.html">Volver al Inicio</a>
+            </div>
+          `;
+          contenedorBotones.style.display = "none";
+          resumenDiv.style.display = "none";
+          return;
+        }
+
+        let totalOriginal = 0;
+        let totalFinal    = 0;
+
+        carrito.forEach((producto, index) => {
+          // Precio original unitario
+          const precioUnitario = producto.precio;
+          // Aplicar descuento unitario si existe
+          let precioUnitarioConDesc = precioUnitario;
+          if (producto.promo && !isNaN(parseInt(producto.promo))) {
+            const descuento = parseInt(producto.promo);
+            precioUnitarioConDesc = Math.round(precioUnitario * (1 - descuento / 100));
+          }
+
+          // Si no se especificó cantidad, asumimos 1
+          const cantidad = producto.cantidad && producto.cantidad >= 1 ? producto.cantidad : 1;
+
+          // Sumar totales (multiplicado por cantidad)
+          totalOriginal += precioUnitario * cantidad;
+          totalFinal    += precioUnitarioConDesc * cantidad;
+
+          // Crear contenedor del item
+          const divItem = document.createElement("div");
+          divItem.className = "item-carrito";
+
+          // Imagen principal (la primera del arreglo)
+          const img = document.createElement("img");
+          img.src = (producto.imagenes && producto.imagenes[0]) || "";
+          img.alt = producto.nombre;
+          divItem.appendChild(img);
+
+          // Información textual
+          const info = document.createElement("div");
+          info.className = "item-info";
+
+          // Nombre
+          const nombreElem = document.createElement("h3");
+          nombreElem.textContent = producto.nombre;
+          info.appendChild(nombreElem);
+
+          // Detalles: Color y Talla (si existen)
+          const detalles = document.createElement("div");
+          detalles.className = "item-detalle";
+          if (producto.colorElegido) {
+            const spanColor = document.createElement("span");
+            spanColor.textContent = "Color: " + producto.colorElegido;
+            detalles.appendChild(spanColor);
+          }
+          if (producto.tallaElegida) {
+            const spanTalla = document.createElement("span");
+            spanTalla.textContent = "Talla: " + producto.tallaElegida;
+            detalles.appendChild(spanTalla);
+          }
+          info.appendChild(detalles);
+
+          // Precio unitario (con y sin descuento)
+          const pPrecioUnit = document.createElement("p");
+          pPrecioUnit.innerHTML = `<strong>Precio unitario:</strong> $${precioUnitarioConDesc.toLocaleString()}`;
+          if (precioUnitarioConDesc !== precioUnitario) {
+            pPrecioUnit.innerHTML += ` 
+              <span style="text-decoration: line-through; color: gray; margin-left:6px;">
+                $${precioUnitario.toLocaleString()}
+              </span>`;
+          }
+          info.appendChild(pPrecioUnit);
+
+          // Control de cantidad (input y botones + / -)
+          const cantidadControl = document.createElement("div");
+          cantidadControl.className = "cantidad-control";
+
+          const botonMenos = document.createElement("button");
+          botonMenos.textContent = "-";
+          botonMenos.title = "Disminuir cantidad";
+          botonMenos.addEventListener("click", () => {
+            if (cantidad > 1) {
+              cambiarCantidad(index, cantidad - 1);
+            }
+          });
+          cantidadControl.appendChild(botonMenos);
+
+          const inputCantidad = document.createElement("input");
+          inputCantidad.type = "number";
+          inputCantidad.min = "1";
+          inputCantidad.value = cantidad;
+          inputCantidad.addEventListener("change", (e) => {
+            cambiarCantidad(index, e.target.value);
+          });
+          cantidadControl.appendChild(inputCantidad);
+
+          const botonMas = document.createElement("button");
+          botonMas.textContent = "+";
+          botonMas.title = "Aumentar cantidad";
+          botonMas.addEventListener("click", () => {
+            cambiarCantidad(index, cantidad + 1);
+          });
+          cantidadControl.appendChild(botonMas);
+
+          info.appendChild(cantidadControl);
+
+          // Subtotal por cantidad
+          const pSubtotal = document.createElement("p");
+          const subtotal = precioUnitarioConDesc * cantidad;
+          pSubtotal.innerHTML = `<strong>Subtotal:</strong> $${subtotal.toLocaleString()}`;
+          info.appendChild(pSubtotal);
+
+          // Descripción (si existe)
+          if (producto.descripcion) {
+            const pDesc = document.createElement("p");
+            pDesc.textContent = producto.descripcion;
+            info.appendChild(pDesc);
+          }
+
+          divItem.appendChild(info);
+
+          // Botón Eliminar (✖)
+          const btnEliminar = document.createElement("button");
+          btnEliminar.className = "btn-eliminar-item";
+          btnEliminar.innerHTML = "✖";
+          btnEliminar.title = "Eliminar este producto";
+          btnEliminar.addEventListener("click", () => eliminarItem(index));
+          divItem.appendChild(btnEliminar);
+
+          contenedorItems.appendChild(divItem);
+        });
+
+        // Mostrar resumen de totales
+        document.getElementById("totalOriginal").textContent = `$${totalOriginal.toLocaleString()}`;
+        document.getElementById("totalFinal").textContent   = `$${totalFinal.toLocaleString()}`;
+        const ahorro = totalOriginal - totalFinal;
+        document.getElementById("ahorro").textContent = `$${ahorro.toLocaleString()}`;
+        resumenDiv.style.display = "block";
+
+        // Mostrar botones (Pagar y Volver al inicio)
+        contenedorBotones.style.display = "flex";
+      }
+
+      // Evento para el botón "Pagar" → Redirige a WhatsApp con el mensaje
+      document.getElementById("btnPagar").addEventListener("click", () => {
+        // Construir el mensaje para WhatsApp
+        let mensaje = "¡Hola! Me gustaría realizar el siguiente pedido:\n\n";
+
+        carrito.forEach((producto, idx) => {
+          const numero = idx + 1;
+          mensaje += `${numero}. Producto: ${producto.nombre}\n`;
+          mensaje += `   Descripción: ${producto.descripcion || "–"}\n`;
+          mensaje += `   Color: ${producto.colorElegido || "–"}\n`;
+          mensaje += `   Talla: ${producto.tallaElegida || "–"}\n`;
+          mensaje += `   Cantidad: ${producto.cantidad || 1}\n`;
+          // Calcular precio unitario con descuento si aplica
+          let precioUnitarioConDesc = producto.precio;
+          if (producto.promo && !isNaN(parseInt(producto.promo))) {
+            const descuento = parseInt(producto.promo);
+            precioUnitarioConDesc = Math.round(producto.precio * (1 - descuento / 100));
+          }
+          mensaje += `   Precio unitario: $${precioUnitarioConDesc.toLocaleString()}\n\n`;
+        });
+
+        // Calcular total final nuevamente
+        const totalFinal = carrito.reduce((sum, producto) => {
+          let precioUnitarioConDesc = producto.precio;
+          if (producto.promo && !isNaN(parseInt(producto.promo))) {
+            const descuento = parseInt(producto.promo);
+            precioUnitarioConDesc = Math.round(producto.precio * (1 - descuento / 100));
+          }
+          const cantidad = producto.cantidad && producto.cantidad >= 1 ? producto.cantidad : 1;
+          return sum + precioUnitarioConDesc * cantidad;
+        }, 0);
+
+        mensaje += `Total a pagar: $${totalFinal.toLocaleString()}\n\n`;
+        mensaje += "Por favor confirma mi pedido. ¡Gracias!";
+
+        // Codificar mensaje para URL
+        const textoCodificado = encodeURIComponent(mensaje);
+        const urlWhatsapp = `https://wa.me/${whatsappNumber}?text=${textoCodificado}`;
+
+        // Redirigir a WhatsApp
+        window.location.href = urlWhatsapp;
+      });
+
+      // Renderizar carrito al cargar la página
+      renderizarCarrito();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gorras - TALØ</title>
+  <link rel="stylesheet" href="estilos_animaciones.css" />
+  <style>
+    /* ================================
+       Ajustes de diseño para gorras.html
+       ================================ */
+
+    /* Reservar espacio para el header fijo */
+    body {
+      padding-top: 80px; /* Ajusta si el header cambia de altura */
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      color: #000;
+    }
+
+    /* ------------ HEADER -------------- */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 60px; /* altura del header */
+      background-color: #fff;
+      border-bottom: 1px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center; /* Centra logo + título */
+      z-index: 100;
+      box-sizing: border-box;
+      padding: 0 20px;
+    }
+
+    /* Botón hamburguesa: en el extremo izquierdo */
+    .menu-toggle {
+      position: absolute;
+      left: 20px;
+      font-size: 2rem;
+      background: none;
+      border: none;
+      color: #000;
+      cursor: pointer;
+      z-index: 110;
+    }
+
+    /* Logo + título centrados */
+    #logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #logo img {
+      width: 70px;   /* más grande */
+      height: 70px;  /* más grande */
+    }
+    #logo h1 {
+      font-size: 2.5rem; /* más grande */
+      margin: 0;
+    }
+
+    /* Menú desplegable: aparece justo debajo del header, alineado con el botón */
+    .menu-links {
+      display: none;
+      flex-direction: column;
+      position: absolute;
+      top: 60px; /* justo debajo del header */
+      left: 20px; /* alineado con el icono hamburguesa */
+      background-color: #000;
+      border: 1px solid #fff;
+      padding: 10px;
+      z-index: 300;
+      box-sizing: border-box;
+    }
+    .menu-links.show {
+      display: flex;
+    }
+    .menu-links a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      transition: color 0.3s;
+    }
+    .menu-links a:hover {
+      color: #ccc;
+    }
+    /* ---------------------------------- */
+
+    /* Grid de productos */
+    .productos-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 20px;
+      padding: 0 20px 40px 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+
+    .producto {
+      background-color: #fff;
+      border: 1px solid #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px;
+      position: relative;
+      height: 100%;
+      box-sizing: border-box;
+    }
+    .producto img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border: 2px solid #000;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    .producto h3 {
+      font-size: 1.1rem;
+      margin: 5px 0;
+      text-align: center;
+    }
+    .producto p {
+      font-size: 0.95rem;
+      margin: 3px 0;
+      text-align: center;
+    }
+
+    /* Botones Eliminar / Editar (ocultos por defecto) */
+    .btn-eliminar,
+    .btn-editar {
+      position: absolute;
+      top: 8px;
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: none; /* se mostrará solo en modo Admin */
+      z-index: 50;
+    }
+    .btn-eliminar {
+      right: 8px;
+      color: #c00;
+    }
+    .btn-editar {
+      left: 8px;
+      color: #00c;
+    }
+
+    /* Paleta de colores dinámica */
+    .color-palette {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .color-circle {
+      width: 18px;
+      height: 18px;
+      border: 1px solid #000;
+      border-radius: 50%;
+      box-sizing: border-box;
+      cursor: default;
+    }
+
+    /* Botón “Añadir al carrito” */
+    .btn-carrito {
+      margin-top: auto;
+      background-color: #000;
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 3px;
+      font-size: 0.95rem;
+    }
+
+    /* Botón “Ir al carrito” */
+    .ir-al-carrito {
+      display: block;
+      text-align: center;
+      margin: 20px auto 40px auto;
+      font-weight: bold;
+      text-decoration: none;
+      color: #000;
+      border: 1px solid #000;
+      padding: 10px 20px;
+      width: fit-content;
+      background-color: #fff;
+      border-radius: 3px;
+    }
+
+    /* Formulario Admin */
+    .admin-form {
+      display: none; /* invisible por defecto */
+      margin: 0 auto 30px auto;
+      max-width: 600px;
+      padding: 20px;
+      border: 2px solid #000;
+      background-color: #fff;
+      box-sizing: border-box;
+    }
+    .admin-form h3 {
+      margin-bottom: 15px;
+      font-size: 1.3rem;
+      text-align: center;
+    }
+    .admin-form input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #000;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    .admin-form button {
+      background-color: #000;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+
+    /* Botón Modo Admin */
+    #modoAdminBtn {
+      display: none; /* aparece solo con token válido */
+      margin: 20px auto;
+      padding: 10px 25px;
+      font-size: 1rem;
+      background: #000;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      margin-top: 20px;
+      padding: 20px 0;
+      background-color: #fff;
+      border-top: 1px solid #000;
+    }
+    footer h3 {
+      margin-bottom: 10px;
+    }
+    footer p {
+      font-size: 0.95rem;
+    }
+
+    /* Responsive */
+    @media screen and (max-width: 768px) {
+      .productos-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ==============================
+       HEADER: LOGO + TÍTULO + HAMBURGUESA
+       ============================== -->
+  <header>
+    <!-- Botón hamburguesa a la izquierda -->
+    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+
+    <!-- Logo + título centrado -->
+    <div id="logo">
+      <img src="imagenes/talo.png" alt="Logo Talø" />
+      <h1>GORRAS</h1>
+    </div>
+
+    <!-- Menú desplegable -->
+    <nav id="menu" class="menu-links">
+      <a href="index.html">Inicio</a>
+      <a href="camisas.html">Camisas</a>
+      <a href="shorts.html">Shorts</a>
+      <a href="gorras.html">Gorras</a>
+      <a href="lociones.html">Lociones</a>
+      <a href="promociones.html">Promociones</a>
+    </nav>
+  </header>
+
+  <!-- ==============================
+       Botón “Modo Admin” (oculto por defecto)
+       ============================== -->
+  <button id="modoAdminBtn">Modo Admin</button>
+
+  <!-- ==============================
+       Formulario de Alta/Edición
+       (se muestra solo en modo Admin)
+       ============================== -->
+  <form class="admin-form" id="formProducto">
+    <h3 id="formTitulo">Agregar nuevo producto (Gorras)</h3>
+    <input type="hidden" id="productoId" value="">
+    <input type="text" id="nombre" placeholder="Nombre del producto" required />
+    <input type="text" id="descripcion" placeholder="Descripción del producto" />
+    <input type="text" id="tallas" placeholder="Tallas (ej: S, M, L)" />
+    <input type="text" id="colores" placeholder="Colores (ej: Rojo, Verde, Negro)" />
+    <input type="number" id="precio" placeholder="Precio en pesos" required />
+    <input type="text" id="promo" placeholder="Promoción (ej: 10, opcional)" />
+    <input type="file" id="imagenes" accept="image/*" multiple />
+    <button type="submit" id="submitBtn">Añadir al catálogo</button>
+  </form>
+
+  <!-- ========================================
+       Grilla de productos (se inyecta con JS)
+       ======================================== -->
+  <div class="productos-grid" id="productos">
+    <!-- Aquí el JavaScript creará cada <div class="producto"> -->
+  </div>
+
+  <!-- Botón ir al carrito -->
+  <a href="carrito.html" class="ir-al-carrito">🛒 Ir al carrito</a>
+
+  <!-- Pie de página -->
+  <footer>
+    <h3>Acerca de Nosotros</h3>
+    <p>Calidad, estilo y buen precio. Muy pronto más funciones y productos.</p>
+  </footer>
+
+  <!-- =================================================================
+       SCRIPT: Fetch a backend + Renderizado de productos + CRUD + Modo Admin
+       ================================================================= -->
+  <script>
+    const BACKEND_URL = "https://taloadmin-backend.onrender.com";
+    const categoria   = "gorras";
+
+    const btnAdmin      = document.getElementById('modoAdminBtn');
+    const form          = document.getElementById('formProducto');
+    const productosDiv  = document.getElementById('productos');
+    const formTitulo    = document.getElementById('formTitulo');
+    const submitBtn     = document.getElementById('submitBtn');
+    const inputImagenes = document.getElementById('imagenes');
+
+    // Mostrar/ocultar menú hamburguesa
+    function toggleMenu() {
+      document.getElementById("menu").classList.toggle("show");
+    }
+    window.toggleMenu = toggleMenu;
+
+    // Al cargar la página
+    window.addEventListener('DOMContentLoaded', () => {
+      cargarProductos();
+
+      // Si ya hay token y es válido, habilitar elementos de Admin
+      if (tieneTokenValido()) {
+        btnAdmin.style.display = 'block';
+        mostrarBotonesAdmin();
+      }
+
+      // Capturar Ctrl+Shift+A para iniciar sesión Admin
+      window.addEventListener('keydown', async (e) => {
+        if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+          e.preventDefault();
+          await iniciarSesionAdmin();
+        }
+      });
+    });
+
+    // 1) Cargar productos desde el backend
+    async function cargarProductos() {
+      try {
+        console.log("🔍 Invocando cargarProductos()…");
+        const resp = await fetch(`${BACKEND_URL}/api/products`);
+        if (!resp.ok) throw new Error("No se pudieron cargar los productos.");
+        const todos = await resp.json();
+        console.log("🎉 Productos recibidos en frontend:", todos);
+        const soloGorras = todos.filter(p => p.categoria === categoria);
+        mostrarProductosEnPantalla(soloGorras);
+      } catch (err) {
+        console.error("Error al cargar productos:", err);
+        productosDiv.innerHTML = "<p>Error al cargar productos.</p>";
+      }
+    }
+
+    // 2) Renderizar productos en la grilla
+    function mostrarProductosEnPantalla(productos) {
+      console.log("🏗️  Renderizando productos en pantalla:", productos);
+      productosDiv.innerHTML = '';
+      productos.forEach(prod => {
+        const card = document.createElement('div');
+        card.className = 'producto';
+
+        // Botón Eliminar
+        const btnDel = document.createElement('button');
+        btnDel.className = 'btn-eliminar';
+        btnDel.textContent = '✖';
+        btnDel.title = "Eliminar producto";
+        btnDel.style.display = 'none';
+        btnDel.onclick = () => eliminarProducto(prod._id);
+        card.appendChild(btnDel);
+
+        // Botón Editar
+        const btnEd = document.createElement('button');
+        btnEd.className = 'btn-editar';
+        btnEd.textContent = '✎';
+        btnEd.title = "Editar producto";
+        btnEd.style.display = 'none';
+        btnEd.onclick = () => abrirFormularioEditar(prod._id);
+        card.appendChild(btnEd);
+
+        // Imagen clickeable a detalle.html
+        const enlace = document.createElement('a');
+        enlace.href = `detalle.html?categoria=${categoria}&id=${prod._id}`;
+        enlace.target = '_blank';
+        const img = document.createElement('img');
+        img.src = (prod.imagenes && prod.imagenes[0]) || '';
+        img.alt = prod.nombre;
+        enlace.appendChild(img);
+        card.appendChild(enlace);
+
+        // Nombre del producto
+        const h3 = document.createElement('h3');
+        h3.textContent = prod.nombre;
+        card.appendChild(h3);
+
+        // Descripción (si existe)
+        if (prod.descripcion) {
+          const pDesc = document.createElement('p');
+          pDesc.textContent = prod.descripcion;
+          card.appendChild(pDesc);
+        }
+
+        // Precio y descuento
+        const tieneDescuento = prod.promo && !isNaN(parseInt(prod.promo));
+        const descuento = tieneDescuento ? parseInt(prod.promo) : 0;
+        const precioOriginal = prod.precio;
+        const precioFinal = tieneDescuento
+          ? Math.round(precioOriginal * (1 - descuento / 100))
+          : precioOriginal;
+
+        const pPrecio = document.createElement('p');
+        pPrecio.innerHTML = `<span style="font-size: 1.1rem; font-weight: bold;">$${precioFinal.toLocaleString()}</span>`;
+        if (tieneDescuento) {
+          pPrecio.innerHTML += `
+            <span style="text-decoration: line-through; color: gray; margin-left: 6px;">
+              $${precioOriginal.toLocaleString()}
+            </span>
+            <span style="background: #000; color: #fff; padding: 2px 6px; font-size: 0.85rem; margin-left: 6px;">
+              -${descuento}%  
+            </span>`;
+        }
+        card.appendChild(pPrecio);
+
+        // Paleta de colores
+        const pColores = document.createElement('p');
+        pColores.textContent = "Colores:";
+        card.appendChild(pColores);
+
+        const palette = document.createElement('div');
+        palette.className = 'color-palette';
+
+        // Ajuste: prod.colores puede ser array o string
+        let arrayDeColores = [];
+        if (Array.isArray(prod.colores)) {
+          arrayDeColores = prod.colores.map(c => c.trim().toLowerCase());
+        } else if (prod.colores && typeof prod.colores === 'string') {
+          arrayDeColores = prod.colores.split(',').map(c => c.trim().toLowerCase());
+        }
+
+        const diccionarioColores = {
+          // Colores básicos
+          rojo:      "red",
+          verde:     "green",
+          azul:      "blue",
+          negro:     "black",
+          blanco:    "white",
+          amarillo:  "yellow",
+          naranja:   "orange",
+          morado:    "purple",
+          rosado:    "pink",
+          gris:      "gray",
+          marron:    "brown",
+          cian:      "cyan",
+          fucsia:    "magenta",
+
+          // Tonos intermedios / variantes
+          rojo_claro:       "lightcoral",
+          rojo_oscuro:      "darkred",
+          verde_claro:      "lightgreen",
+          verde_oscuro:     "darkgreen",
+          azul_claro:       "lightblue",
+          azul_oscuro:      "darkblue",
+          gris_claro:       "lightgray",
+          gris_oscuro:      "darkgray",
+          marron_claro:     "peru",
+          marron_oscuro:    "saddlebrown",
+          morado_claro:     "plum",
+          morado_oscuro:    "indigo",
+          rosado_claro:     "lightpink",
+          rosado_oscuro:    "deeppink",
+          amarillo_claro:   "lightyellow",
+          naranja_claro:    "peachpuff",
+          naranja_oscuro:   "darkorange",
+          beige:            "beige",
+
+          // Colores pastel
+          pastel_rojo:      "#ff9999",
+          pastel_rosa:      "#ffb6c1",
+          pastel_verde:     "#77dd77",
+          pastel_amarillo:  "#fdfd96",
+          pastel_azul:      "#aec6cf",
+          pastel_morado:    "#cdb4db",
+          pastel_turquesa:  "#afeeee",
+
+          // Colores tierra / neutros
+          beige_oscuro:       "#a0522d",
+          caqui:              "khaki",
+          marron_tierra:      "#8b4513",
+          arena:              "#c2b280",
+          crema:              "#fffdd0",
+
+          // Colores “joya”
+          esmeralda:         "#50c878",
+          zafiro:            "#0f52ba",
+          rubi:              "#e0115f",
+          topacio:           "#ffc87c",
+          amatista:          "#9966cc",
+
+          // Colores metalizados
+          dorado:            "gold",
+          plateado:          "silver",
+          bronce:            "#cd7f32",
+
+          // Colores “vinos” / oscuros
+          vino:              "#722f37",
+          granate:           "#800000",
+          berenjena:         "#3b0911",
+          azul_marino:       "navy",
+          oliva:             "olive",
+
+          // Colores aqua / marinos
+          turquesa:          "turquoise",
+          aqua:              "aqua",
+          celeste:           "#b2ffff",
+          teal:              "teal",
+          marino_claro:      "#5f9ea0",
+
+          // Colores especiales
+          coral:             "coral",
+          champagne:         "#f7e7ce",
+          chocolate:         "chocolate",
+          salmon:            "salmon",
+          lavanda:           "lavender",
+          pistacho:          "#93c572",
+          lima:              "lime",
+          lima_claro:        "#ccff00",
+          indigo:            "indigo",
+          magenta_oscuro:    "#8b008b",
+          cyan_oscuro:       "#008b8b",
+          gris_perla:        "#eae0c8"
+        };
+
+        if (arrayDeColores.length > 0) {
+          arrayDeColores.forEach(colorNombre => {
+            const circle = document.createElement('span');
+            circle.className = 'color-circle';
+
+            if (diccionarioColores[colorNombre]) {
+              circle.style.backgroundColor = diccionarioColores[colorNombre];
+            } else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorNombre)) {
+              circle.style.backgroundColor = colorNombre;
+            } else {
+              circle.style.backgroundColor = "#fff";
+            }
+
+            palette.appendChild(circle);
+          });
+        } else {
+          const circle = document.createElement('span');
+          circle.className = 'color-circle';
+          circle.style.backgroundColor = "#fff";
+          palette.appendChild(circle);
+        }
+
+        card.appendChild(palette);
+
+        // Botón “Añadir al carrito”
+        const btnCar = document.createElement('button');
+        btnCar.className = 'btn-carrito';
+        btnCar.textContent = 'Añadir al carrito';
+        btnCar.onclick = () => irADetalle(prod._id);
+        card.appendChild(btnCar);
+
+        productosDiv.appendChild(card);
+      });
+
+      if (tieneTokenValido()) {
+        mostrarBotonesAdmin();
+      }
+    }
+
+    // 3) Abrir detalle en nueva pestaña
+    function irADetalle(id) {
+      const url = `detalle.html?categoria=${categoria}&id=${id}`;
+      window.open(url, "_blank");
+    }
+
+    // 4) Iniciar sesión Admin (prompt + fetch a /login)
+    async function iniciarSesionAdmin() {
+      const username = prompt("👉 Ingrese Usuario (modo Admin):", "");
+      if (!username) return;
+      const password = prompt("👉 Ingrese Contraseña (modo Admin):", "");
+      if (!password) return;
+
+      try {
+        const resp = await fetch(`${BACKEND_URL}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        if (!resp.ok) {
+          const err = await resp.json();
+          alert(`❌ ${err.error || 'Credenciales inválidas.'}`);
+          return;
+        }
+        const { token } = await resp.json();
+        localStorage.setItem('admin_jwt', token);
+        alert("✔️ Sesión Admin iniciada correctamente.");
+        btnAdmin.style.display = 'block';
+        mostrarBotonesAdmin();
+      } catch (error) {
+        console.error("Error al conectar con backend:", error);
+        alert("⚠️ Error al contactar al servidor de autenticación.");
+      }
+    }
+
+    // 5) Verificar si hay un token válido en localStorage
+    function tieneTokenValido() {
+      const token = localStorage.getItem('admin_jwt');
+      if (!token) return false;
+      try {
+        const payloadBase64 = token.split('.')[1];
+        const decoded = JSON.parse(atob(payloadBase64));
+        const ahora = Math.floor(Date.now() / 1000);
+        return decoded.exp && decoded.exp > ahora;
+      } catch {
+        return false;
+      }
+    }
+
+    // 6) Mostrar botones Eliminar/Editar y “Modo Admin”
+    function mostrarBotonesAdmin() {
+      document.querySelectorAll('.btn-eliminar, .btn-editar').forEach(btn => {
+        btn.style.display = 'block';
+      });
+      btnAdmin.style.display = 'block';
+    }
+
+    // 7) Eliminar producto (DELETE)
+    async function eliminarProducto(id) {
+      if (!tieneTokenValido()) return;
+      if (!confirm("¿Seguro que deseas eliminar este producto?")) return;
+      const token = localStorage.getItem('admin_jwt');
+      try {
+        const resp = await fetch(`${BACKEND_URL}/api/products/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!resp.ok) throw new Error("No se pudo eliminar el producto.");
+        alert("Producto eliminado del servidor.");
+        cargarProductos();
+      } catch (err) {
+        console.error("Error al eliminar producto:", err);
+        alert("Error al eliminar producto.");
+      }
+    }
+
+    // 8) Abrir formulario para editar (GET y cargar datos)
+    async function abrirFormularioEditar(id) {
+      if (!tieneTokenValido()) return;
+      try {
+        const resp = await fetch(`${BACKEND_URL}/api/products/${id}`);
+        if (!resp.ok) throw new Error("No se pudo obtener el producto.");
+        const producto = await resp.json();
+
+        formTitulo.textContent = "Editar producto (Gorras)";
+        submitBtn.textContent = "Guardar cambios";
+        document.getElementById('productoId').value = producto._id;
+        document.getElementById('nombre').value = producto.nombre;
+        document.getElementById('descripcion').value = producto.descripcion || "";
+        document.getElementById('tallas').value = producto.tallas.join(',');
+        document.getElementById('colores').value = producto.colores.join(',');
+        document.getElementById('precio').value = producto.precio;
+        document.getElementById('promo').value = producto.promo || "";
+        inputImagenes.required = false; // no forzar nueva imagen al editar
+
+        form.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (error) {
+        console.error("Error al cargar producto para edición:", error);
+        alert("Error al cargar datos para edición.");
+      }
+    }
+
+    // 9) Abrir formulario para agregar (resetea campos)
+    function abrirFormularioParaAgregar() {
+      formTitulo.textContent = "Agregar nuevo producto (Gorras)";
+      submitBtn.textContent = "Añadir al catálogo";
+      document.getElementById('productoId').value = "";
+      form.reset();
+      inputImagenes.required = true;
+      form.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 10) Botón “Modo Admin” alterna formulario
+    btnAdmin.addEventListener('click', () => {
+      if (!tieneTokenValido()) {
+        alert("🚫 Debes iniciar sesión como Admin.");
+        return;
+      }
+      if (form.style.display === 'block') {
+        form.style.display = 'none';
+      } else {
+        abrirFormularioParaAgregar();
+      }
+    });
+
+    // 11) Manejo del formulario (submit): creación o edición
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!tieneTokenValido()) {
+        alert("🚫 Debes iniciar sesión como Admin para guardar cambios.");
+        return;
+      }
+
+      const idEdicion = document.getElementById('productoId').value;
+      let imagenesArray = [];
+      const archivos = inputImagenes.files;
+
+      if (!idEdicion) {
+        // NUEVO PRODUCTO: requerimos al menos 1 imagen
+        if (!archivos || archivos.length === 0) {
+          alert("Debes seleccionar al menos una imagen.");
+          return;
+        }
+        try {
+          const promesas = Array.from(archivos).map(file => {
+            return new Promise((resolve, reject) => {
+              if (!file.type.startsWith("image/")) {
+                reject(new Error(`"${file.name}" no es una imagen.`));
+                return;
+              }
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = () => reject(new Error(`Error leyendo "${file.name}".`));
+              reader.readAsDataURL(file);
+            });
+          });
+          const resultados = await Promise.allSettled(promesas);
+          imagenesArray = resultados
+            .filter(r => r.status === "fulfilled")
+            .map(r => r.value);
+
+          if (imagenesArray.length === 0) {
+            alert("No se pudo procesar ninguna imagen válida.");
+            return;
+          }
+        } catch (err) {
+          console.error("Error al procesar imágenes:", err);
+          alert("Error al procesar las imágenes.");
+          return;
+        }
+      }
+
+      // Leer campos del formulario
+      const nombre      = document.getElementById('nombre').value;
+      const descripcion = document.getElementById('descripcion').value;
+      const tallasArr   = document.getElementById('tallas').value
+                           .split(',').map(s => s.trim());
+      const coloresArr  = document.getElementById('colores').value
+                           .split(',').map(s => s.trim());
+      const precio      = parseFloat(document.getElementById('precio').value);
+      const promo       = document.getElementById('promo').value;
+      const token       = localStorage.getItem('admin_jwt');
+
+      if (!nombre || isNaN(precio)) {
+        alert("Nombre y precio son obligatorios.");
+        return;
+      }
+
+      const prodData = {
+        nombre,
+        descripcion,
+        tallas: tallasArr,
+        colores: coloresArr,
+        precio,
+        promo,
+        imagenes: imagenesArray,
+        categoria
+      };
+
+      try {
+        if (idEdicion) {
+          // EDICIÓN (PUT)
+          const resp = await fetch(`${BACKEND_URL}/api/products/${idEdicion}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(prodData)
+          });
+          if (!resp.ok) throw new Error("No se pudo actualizar el producto.");
+          alert("✔️ Producto actualizado correctamente.");
+        } else {
+          // CREACIÓN (POST)
+          const resp = await fetch(`${BACKEND_URL}/api/products`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(prodData)
+          });
+          if (!resp.ok) throw new Error("No se pudo crear el producto.");
+          alert("✔️ Producto agregado al catálogo.");
+        }
+        form.reset();
+        form.style.display = 'none';
+        cargarProductos();
+      } catch (err) {
+        console.error("Error al guardar producto:", err);
+        alert("Error al guardar producto.");
+      }
+    });
+  </script>
+</body>
+</html>

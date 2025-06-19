@@ -1,0 +1,347 @@
+/* ============================
+   estilos_animaciones.css
+   ============================ */
+
+/* --- Reset y estilos base --- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f5f5f5;
+  color: #000;
+}
+
+/* --- Clase para ocultar elementos --- */
+.hidden {
+  display: none !important;
+}
+
+/* --- Cuando el body tiene la clase admin-activo, todo data-admin='solo' se muestra --- */
+.admin-activo [data-admin="solo"] {
+  display: block !important;
+}
+
+/* ================================
+   ESTILOS GENERALES DE LA PÁGINA
+   (puedes combinar con tus animaciones)
+   ================================ */
+
+/* Encabezado fijo */
+header {
+  width: 100%;
+  background-color: #fff;
+  border-bottom: 1px solid #000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  padding: 10px 0;
+}
+
+#logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#logo img {
+  width: 50px;
+  height: 50px;
+}
+#logo h1 {
+  font-size: 1.8rem;
+}
+
+/* Menú hamburguesa (común en todas las páginas) */
+.menu-container {
+  background-color: #000;
+  padding: 10px 20px;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 200;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #fff;
+}
+.menu-toggle {
+  font-size: 2rem;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+.menu-links {
+  display: none;
+  flex-direction: column;
+  position: absolute;
+  top: 60px;
+  left: 20px;
+  background-color: #000;
+  border: 1px solid #fff;
+  padding: 10px;
+  z-index: 300;
+}
+.menu-links.show {
+  display: flex;
+}
+.menu-links a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+  transition: color 0.3s;
+}
+.menu-links a:hover {
+  color: #ccc;
+}
+
+/* Botón “Modo Admin” / “Agregar producto” */
+#modoAdminBtn {
+  display: none; /* empiezan ocultos */
+  margin: 20px auto;
+  padding: 10px 25px;
+  font-size: 1rem;
+  background: #000;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+/* Formulario de Alta/Edición (común en camisas.html) */
+.admin-form {
+  display: none; /* empieza oculto */
+  margin: 0 auto 30px auto;
+  max-width: 600px;
+  padding: 20px;
+  border: 2px solid #000;
+  background-color: #fff;
+}
+.admin-form h3 {
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+  text-align: center;
+}
+.admin-form input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #000;
+  font-size: 1rem;
+}
+.admin-form button {
+  background-color: #000;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+/* Botones Editar/Eliminar (dentro de cada tarjeta) */
+.btn-eliminar,
+.btn-editar {
+  position: absolute;
+  top: 8px;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: none; /* empiezan ocultos */
+}
+.btn-eliminar {
+  right: 8px;
+  color: #c00;
+}
+.btn-editar {
+  left: 8px;
+  color: #00c;
+}
+
+/* Botón “Añadir al carrito” en cada producto */
+.btn-carrito {
+  margin-top: auto;
+  background-color: #000;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 0.95rem;
+}
+
+/* Botón “Ir al carrito” */
+.ir-al-carrito {
+  display: block;
+  text-align: center;
+  margin: 20px auto 40px auto;
+  font-weight: bold;
+  text-decoration: none;
+  color: #000;
+  border: 1px solid #000;
+  padding: 10px 20px;
+  width: fit-content;
+  background-color: #fff;
+  border-radius: 3px;
+}
+
+/* Pie de página */
+footer {
+  text-align: center;
+  margin-top: 20px;
+  padding: 20px 0;
+  background-color: #fff;
+  border-top: 1px solid #000;
+}
+footer h3 {
+  margin-bottom: 10px;
+}
+footer p {
+  font-size: 0.95rem;
+}
+
+/* ================================
+   ESTILOS ESPECÍFICOS: camisas.html
+   ================================ */
+.productos-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 20px;
+  padding: 0 20px 40px 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.producto {
+  background-color: #fff;
+  border: 1px solid #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  position: relative;
+  height: 100%;
+}
+.producto img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border: 2px solid #000;
+  margin-bottom: 10px;
+}
+
+/* Paleta de colores dinámica */
+.color-palette {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.color-circle {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #000;
+  border-radius: 50%;
+  box-sizing: border-box;
+  cursor: default;
+}
+
+/* ================================
+   ESTILOS ESPECÍFICOS: index.html
+   ================================ */
+.hero {
+  text-align: center;
+  padding: 120px 20px 60px 20px; /* deja espacio para encabezado */
+  background-color: #fff;
+}
+.hero h2 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+.hero p {
+  font-size: 1.1rem;
+}
+
+.secciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 60px;
+  padding: 0 20px;
+}
+.seccion {
+  background-color: #fff;
+  border: 1px solid #000;
+  width: calc(33.333% - 40px);
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  box-sizing: border-box;
+}
+.seccion .imagen img {
+  width: 100%;
+  height: auto;
+  max-height: 150px;
+  object-fit: cover;
+  border: 2px solid #000;
+  margin-bottom: 10px;
+}
+.seccion .contenido {
+  text-align: center;
+}
+.seccion .contenido h3 {
+  margin-bottom: 5px;
+  font-size: 1.2rem;
+}
+.seccion .contenido p {
+  font-size: 0.95rem;
+}
+
+/* Responsive ajustes */
+@media screen and (max-width: 768px) {
+  .productos-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .secciones {
+    flex-direction: column;
+    align-items: center;
+  }
+  .seccion {
+    width: 100%;
+    max-width: 400px;
+  }
+}
+header {
+  width: 100%;
+  background-color: #fff;
+  border-bottom: 1px solid #000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  padding: 10px 0;
+}
+#logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#logo img {
+  width: 50px;
+  height: 50px;
+}
+#logo h1 {
+  font-size: 1.8rem;
+}

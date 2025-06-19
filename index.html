@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TALØ - Tienda de Ropa</title>
+  <link rel="stylesheet" href="estilos_animaciones.css">
+</head>
+<body style="padding-top: 80px;">
+
+  <!-- ===========================
+       ENCABEZADO ORIGINAL
+       =========================== -->
+  <header>
+    <div id="logo">
+      <img src="imagenes/talo.png" alt="Logo Talø">
+      <h1>TALØ</h1>
+    </div>
+  </header>
+
+  <!-- Menú fijo con botón hamburguesa ORIGINAL -->
+  <div class="menu-container">
+    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+    <nav id="menu" class="menu-links">
+      <a href="#camisas">Camisas</a>
+      <a href="#shorts">Shorts</a>
+      <a href="#gorras">Gorras</a>
+      <a href="#lociones">Lociones</a>
+      <a href="#promociones">Promociones</a>
+    </nav>
+  </div>
+
+  <!-- HERO ORIGINAL -->
+  <div class="hero">
+    <h2>¡Explora nuestro catálogo exclusivo!</h2>
+    <p>Encuentra las mejores prendas y accesorios al mejor precio</p>
+  </div>
+
+  <!-- SECCIONES ORIGINALES -->
+  <div class="secciones">
+    <div class="seccion" id="camisas">
+      <div class="imagen">
+        <a href="camisas.html">
+          <img src="imagenes/camisa.jpg" alt="Camisa">
+        </a>
+      </div>
+      <div class="contenido">
+        <h3>Camisas</h3>
+        <p>Amplia variedad de camisas modernas y clásicas para todos los gustos.</p>
+      </div>
+    </div>
+
+    <div class="seccion" id="shorts">
+      <div class="imagen">
+        <a href="shorts.html">
+          <img src="imagenes/shorts.jpg" alt="Shorts">
+        </a>
+      </div>
+      <div class="contenido">
+        <h3>Shorts</h3>
+        <p>Ideales para el clima cálido, combinan frescura y estilo sin comprometer comodidad.</p>
+      </div>
+    </div>
+
+    <div class="seccion" id="gorras">
+      <div class="imagen">
+        <a href="gorras.html">
+          <img src="imagenes/gorra.jpg" alt="Gorras">
+        </a>
+      </div>
+      <div class="contenido">
+        <h3>Gorras</h3>
+        <p>El accesorio perfecto para completar tu look, ya sea casual o deportivo.</p>
+      </div>
+    </div>
+
+    <div class="seccion" id="lociones">
+      <div class="imagen">
+        <a href="lociones.html">
+          <img src="imagenes/lociones.jpg" alt="Lociones">
+        </a>
+      </div>
+      <div class="contenido">
+        <h3>Lociones</h3>
+        <p>Fragancias frescas y duraderas para cada ocasión.</p>
+      </div>
+    </div>
+
+    <div class="seccion" id="promociones">
+      <div class="imagen">
+        <a href="promociones.html">
+          <img src="imagenes/descuento.png" alt="Promociones">
+        </a>
+      </div>
+      <div class="contenido">
+        <h3>Promociones</h3>
+        <p>Ofertas especiales y descuentos únicos por tiempo limitado.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIE DE PÁGINA ORIGINAL -->
+  <footer>
+    <h3>Acerca de Nosotros</h3>
+    <p>Calidad, estilo y buen precio. Muy pronto más funciones y productos.</p>
+
+    <div style="margin-top: 30px;">
+      <a href="https://www.instagram.com/talo_100_urbano/" target="_blank">
+        <img src="imagenes/instagram.png" alt="Instagram" style="width: 40px; height: 40px; margin-right: 10px;">
+      </a>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <h4>Contáctanos</h4>
+      <p>📞 +57 324 3799852</p>
+    </div>
+  </footer>
+
+  <!-- VISOR DE IMÁGENES ORIGINAL -->
+  <div id="visor" onclick="cerrarVisor()">
+    <img src="" alt="imagen ampliada" id="imagenGrande">
+  </div>
+
+  <!-- ====================================================
+       SCRIPTS DE ANIMACIONES, HAMBURGUESA, ETC. (ORIGINALES)
+       ==================================================== -->
+  <script>
+    // Tu código original de IntersectionObserver y toggleMenu:
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        } else {
+          entry.target.classList.remove('visible');
+        }
+      });
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll('.seccion').forEach(seccion => {
+      observer.observe(seccion);
+    });
+
+    function cerrarVisor() {
+      document.getElementById('visor').style.display = 'none';
+    }
+
+    function toggleMenu() {
+      document.getElementById("menu").classList.toggle("show");
+    }
+  </script>
+
+  <!-- ============================================================== 
+       NUEVO BLOQUE “Modo Admin” (fetch a /login + JWT) 
+       ============================================================== -->
+  <script>
+    const BACKEND_URL = "https://taloadmin-backend.onrender.com";
+
+    // 1) Función para intentar login contra /login
+    async function iniciarSesionAdmin() {
+      const username = prompt("👉 Ingrese Usuario (modo Admin):", "");
+      if (!username) return;
+      const password = prompt("👉 Ingrese Contraseña (modo Admin):", "");
+      if (!password) return;
+
+      try {
+        const resp = await fetch(`${BACKEND_URL}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        if (resp.status === 200) {
+          const { token } = await resp.json();
+          localStorage.setItem('admin_jwt', token);
+          habilitarModoAdmin();
+          alert("✔️ Sesión Admin iniciada.");
+        } else {
+          const err = await resp.json();
+          alert("❌ " + (err.error || "Credenciales inválidas."));
+        }
+      } catch (e) {
+        console.error(e);
+        alert("⚠️ No se pudo conectar al servidor de autenticación.");
+      }
+    }
+
+    // 2) Verifica si hay token en localStorage y no está expirado
+    function tieneTokenValido() {
+      const token = localStorage.getItem('admin_jwt');
+      if (!token) return false;
+      try {
+        const payloadBase64 = token.split('.')[1];
+        const decoded = JSON.parse(atob(payloadBase64));
+        return decoded.exp && decoded.exp > Math.floor(Date.now() / 1000);
+      } catch {
+        return false;
+      }
+    }
+
+    // 3) Habilita modo Admin: muestra elementos y hace editable
+    function habilitarModoAdmin() {
+  document.body.classList.add("admin-activo");
+  document.querySelectorAll("[data-admin='solo']").forEach(el => {
+    el.classList.remove("hidden");
+  });
+
+  // ------------------------------------------------------------
+  //  NUEVA LÓGICA: ICONO DE EDICIÓN + SELECTOR DE ARCHIVO LOCAL
+  // ------------------------------------------------------------
+
+  document.querySelectorAll("img").forEach(img => {
+    // 1) Nos aseguramos de que el contenedor padre tenga position: relative
+    const parent = img.parentElement;
+    if (getComputedStyle(parent).position === "static") {
+      parent.style.position = "relative";
+      // Si el padre era un <a> o un <div> sin posición, lo convertimos a relativo
+    }
+
+    // 2) Creamos un <div> que actuará como icono de lápiz sobre la imagen
+    const icono = document.createElement("div");
+    icono.innerText = "✎";
+    icono.style.position = "absolute";
+    icono.style.top = "8px";
+    icono.style.right = "8px";
+    icono.style.background = "rgba(0,0,0,0.6)";
+    icono.style.color = "#fff";
+    icono.style.padding = "2px 5px";
+    icono.style.borderRadius = "4px";
+    icono.style.cursor = "pointer";
+    icono.style.zIndex = "10";
+    icono.style.fontSize = "16px";
+    icono.style.userSelect = "none";
+    parent.appendChild(icono);
+
+    // 3) Creamos un <input type="file"> oculto para seleccionar la nueva imagen
+    const inputFile = document.createElement("input");
+    inputFile.type = "file";
+    inputFile.accept = "image/*";
+    inputFile.style.display = "none";
+    parent.appendChild(inputFile);
+
+    // 4) Al hacer clic en el icono, disparamos el selector de archivos
+    icono.addEventListener("click", (e) => {
+      e.stopPropagation();
+      inputFile.click();
+    });
+
+    // 5) Cuando el usuario selecciona un archivo, usamos FileReader para mostrarlo
+    inputFile.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+      // Limpiamos el input para que pueda reabrir el mismo archivo si se desea
+      inputFile.value = "";
+    });
+
+    // 6) Añadimos un pequeño efecto visual al pasar el puntero (no obligatorio)
+    img.style.transition = "outline .2s";
+    img.addEventListener("mouseenter", () => {
+      img.style.outline = "2px dashed orange";
+    });
+    img.addEventListener("mouseleave", () => {
+      img.style.outline = "none";
+    });
+  });
+
+  // ------------------------------------------------------------
+  //  (Opcional) Mostrar un banner “Modo Admin Activo”
+  // ------------------------------------------------------------
+  if (!document.getElementById("bannerAdmin")) {
+    const banner = document.createElement("div");
+    banner.id = "bannerAdmin";
+    banner.innerText = "🔒 Modo Admin Activo";
+    banner.style.position = "fixed";
+    banner.style.bottom = "10px";
+    banner.style.right = "10px";
+    banner.style.background = "#000";
+    banner.style.color = "#fff";
+    banner.style.padding = "8px 12px";
+    banner.style.zIndex = "2000";
+    banner.style.borderRadius = "4px";
+    document.body.appendChild(banner);
+  }
+}
+
+
+      // 3.3) Banner “Modo Admin Activo”
+      if (!document.getElementById("bannerAdmin")) {
+        const banner = document.createElement("div");
+        banner.id = "bannerAdmin";
+        banner.innerText = "🔒 Modo Admin Activo";
+        banner.style.position = "fixed";
+        banner.style.bottom = "10px";
+        banner.style.right = "10px";
+        banner.style.background = "#000";
+        banner.style.color = "#fff";
+        banner.style.padding = "8px 12px";
+        banner.style.zIndex = "2000";
+        banner.style.borderRadius = "4px";
+        document.body.appendChild(banner);
+      }
+    }
+
+    // 4) (Opcional) Cerrar sesión Admin
+    function cerrarSesionAdmin() {
+      localStorage.removeItem('admin_jwt');
+      document.body.classList.remove("admin-activo");
+      document.querySelectorAll("[data-admin='solo']").forEach(el => {
+        el.classList.add("hidden");
+      });
+      document.querySelectorAll("h1, h2, h3, h4, p").forEach(el => {
+        el.contentEditable = false;
+        el.style.cursor = "auto";
+      });
+      document.querySelectorAll("img").forEach(img => {
+        img.style.outline = "none";
+        img.replaceWith(img.cloneNode(true));
+      });
+      const banner = document.getElementById("bannerAdmin");
+      if (banner) banner.remove();
+      alert("🔒 Sesión Admin cerrada.");
+    }
+
+    // 5) Al cargar, si hay token válido, habilitamos
+    window.addEventListener("DOMContentLoaded", () => {
+      if (tieneTokenValido()) {
+        habilitarModoAdmin();
+      }
+      // Vincular Ctrl+Shift+A
+      if (!('ontouchstart' in window)) {
+        window.addEventListener("keydown", async (e) => {
+          if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+            e.preventDefault();
+            await iniciarSesionAdmin();
+          }
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>

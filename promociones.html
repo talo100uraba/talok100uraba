@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Promociones - TALØ</title>
+  <!-- Hoja de estilos global (estilos_animaciones.css) -->
+  <link rel="stylesheet" href="estilos_animaciones.css" />
+  <style>
+    /* ================================
+       Estilos específicos para promociones.html
+       ================================ */
+
+    body {
+      padding-top: 80px; /* Deja espacio para el header fijo */
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      color: #000;
+      box-sizing: border-box;
+    }
+
+    /* ------------ HEADER -------------- */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 60px; /* Altura del header */
+      background-color: #fff;
+      border-bottom: 1px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center; /* Centra logo + título */
+      z-index: 100;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+    .menu-toggle {
+      position: absolute;
+      left: 20px;
+      font-size: 2rem;
+      background: none;
+      border: none;
+      color: #000;
+      cursor: pointer;
+      z-index: 110;
+    }
+    #logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #logo img {
+      width: 70px;
+      height: 70px;
+    }
+    #logo h1 {
+      font-size: 2.5rem;
+      margin: 0;
+    }
+    .menu-links {
+      display: none;
+      flex-direction: column;
+      position: absolute;
+      top: 60px;   /* Debajo del header */
+      left: 20px;  /* Alineado con el ícono hamburguesa */
+      background-color: #000;
+      border: 1px solid #fff;
+      padding: 10px;
+      z-index: 300;
+      box-sizing: border-box;
+    }
+    .menu-links.show {
+      display: flex;
+    }
+    .menu-links a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      transition: color 0.3s;
+    }
+    .menu-links a:hover {
+      color: #ccc;
+    }
+    /* ---------------------------------- */
+
+    /* Grid de productos en promoción */
+    .productos-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 20px;
+      padding: 0 20px 40px 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+    .producto {
+      background-color: #fff;
+      border: 1px solid #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px;
+      position: relative;
+      height: 100%;
+      box-sizing: border-box;
+    }
+    .producto img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border: 2px solid #000;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    .producto h3 {
+      font-size: 1.1rem;
+      margin: 5px 0;
+      text-align: center;
+    }
+    .producto p {
+      font-size: 0.95rem;
+      margin: 3px 0;
+      text-align: center;
+    }
+
+    /* Etiqueta “-XX%” sobre la imagen (descuento) */
+    .descuento-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background-color: #c00;
+      color: #fff;
+      padding: 4px 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      border-radius: 3px;
+      z-index: 10;
+    }
+
+    /* Botón “Ver detalles / Añadir al carrito” */
+    .btn-carrito {
+      margin-top: auto;
+      background-color: #000;
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 3px;
+      font-size: 0.95rem;
+    }
+
+    /* Botón “Ir al carrito” */
+    .ir-al-carrito {
+      display: block;
+      text-align: center;
+      margin: 20px auto 40px auto;
+      font-weight: bold;
+      text-decoration: none;
+      color: #000;
+      border: 1px solid #000;
+      padding: 10px 20px;
+      width: fit-content;
+      background-color: #fff;
+      border-radius: 3px;
+    }
+
+    /* Mensaje cuando no hay productos en promoción */
+    .vacio {
+      text-align: center;
+      font-size: 1.2rem;
+      margin: 40px 0;
+    }
+
+    /* ------------ BOTÓN MODO ADMIN ------------ */
+    #modoAdminBtn {
+      display: none; /* Se mostrará solo si hay token válido */
+      margin: 20px auto;
+      padding: 10px 25px;
+      font-size: 1rem;
+      background: #000;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 3px;
+      position: relative;
+      z-index: 100;
+    }
+
+    /* Formulario de alta/edición (solo Admin) */
+    .admin-form {
+      display: none; /* invisible por defecto */
+      margin: 20px auto 30px auto;
+      max-width: 600px;
+      padding: 20px;
+      border: 2px solid #000;
+      background-color: #fff;
+      box-sizing: border-box;
+    }
+    .admin-form h3 {
+      margin-bottom: 15px;
+      font-size: 1.3rem;
+      text-align: center;
+    }
+    .admin-form input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #000;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    .admin-form button {
+      background-color: #000;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    /* ---------------------------------- */
+
+    /* Paleta de colores (círculos) dentro de cada promoción */
+    .color-palette {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .color-circle {
+      width: 18px;
+      height: 18px;
+      border: 1px solid #000;
+      border-radius: 50%;
+      box-sizing: border-box;
+      cursor: default;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      margin-top: 20px;
+      padding: 20px 0;
+      background-color: #fff;
+      border-top: 1px solid #000;
+    }
+    footer h3 {
+      margin-bottom: 10px;
+    }
+    footer p {
+      font-size: 0.95rem;
+    }
+
+    /* Responsive: 2 columnas en pantallas pequeñas */
+    @media screen and (max-width: 768px) {
+      .productos-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ==============================
+       HEADER: LOGO + TÍTULO + HAMBURGUESA
+       ============================== -->
+  <header>
+    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+    <div id="logo">
+      <img src="imagenes/talo.png" alt="Logo Talø" />
+      <h1>PROMOCIONES</h1>
+    </div>
+    <nav id="menu" class="menu-links">
+      <a href="index.html">Inicio</a>
+      <a href="camisas.html">Camisas</a>
+      <a href="shorts.html">Shorts</a>
+      <a href="gorras.html">Gorras</a>
+      <a href="lociones.html">Lociones</a>
+      <a href="promociones.html">Promociones</a>
+    </nav>
+  </header>
+
+  <!-- ==============================
+       Botón “Modo Admin” (oculto por defecto)
+       Aparece solo si el JWT es válido
+       ============================== -->
+  <button id="modoAdminBtn">Modo Admin</button>
+
+  <!-- ==============================
+       Formulario de alta/edición (solo Admin)
+       ============================== -->
+  <form class="admin-form" id="formProducto">
+    <h3 id="formTitulo">Agregar nueva promoción</h3>
+    <!-- En edición guardará aquí el id; si está vacío, se interpreta como “nuevo” -->
+    <input type="hidden" id="productoId" value="" />
+    <input type="text" id="nombre" placeholder="Nombre del producto" required />
+    <input type="text" id="descripcion" placeholder="Descripción del producto" />
+    <input type="text" id="tallas" placeholder="Tallas (ej: S, M, L)" />
+    <input type="text" id="colores" placeholder="Colores (ej: Rojo, Verde, Negro)" />
+    <input type="number" id="precio" placeholder="Precio en pesos" required />
+    <input type="text" id="promo" placeholder="Promoción (ej: 10, obligatorio)" />
+    <input type="file" id="imagenes" accept="image/*" multiple />
+    <button type="submit" id="submitBtn">Añadir promoción</button>
+  </form>
+
+  <!-- ========================================
+       Grilla de productos en promoción
+       (se inyecta con JavaScript)
+       ======================================== -->
+  <div class="productos-grid" id="productosPromo">
+    <!-- Aquí el JS inyectará cada producto con descuento -->
+  </div>
+
+  <!-- Botón ir al carrito -->
+  <a href="carrito.html" class="ir-al-carrito">🛒 Ir al carrito</a>
+
+  <!-- Pie de página -->
+  <footer>
+    <h3>Acerca de Nosotros</h3>
+    <p>Calidad, estilo y buen precio. Muy pronto más funciones y productos.</p>
+  </footer>
+
+  <!-- ============================================================
+       SCRIPT: Menú hamburguesa, fetch a backend + Renderizado
+       de promociones + CRUD (modo Admin) para agregar/promociones
+       ============================================================ -->
+  <script>
+    // Mostrar/ocultar menú hamburguesa
+    function toggleMenu() {
+      document.getElementById("menu").classList.toggle("show");
+    }
+
+    const BACKEND_URL = "https://taloadmin-backend.onrender.com";
+    const btnAdmin     = document.getElementById('modoAdminBtn');
+    const form         = document.getElementById('formProducto');
+    const contPromo    = document.getElementById("productosPromo");
+    const formTitulo   = document.getElementById('formTitulo');
+    const submitBtn    = document.getElementById('submitBtn');
+    const inputImgs    = document.getElementById('imagenes');
+    const inputNombre      = document.getElementById('nombre');
+    const inputDescripcion = document.getElementById('descripcion');
+    const inputTallas      = document.getElementById('tallas');
+    const inputColores     = document.getElementById('colores');
+    const inputPrecio      = document.getElementById('precio');
+    const inputPromo       = document.getElementById('promo');
+    const inputProductoId  = document.getElementById('productoId');
+
+    // 1) Al cargar la página:
+    //    • Cargar y mostrar todas las promociones desde el backend
+    //    • Si hay token JWT válido, desplegar botón "Modo Admin"
+    window.addEventListener('DOMContentLoaded', () => {
+      cargarPromocionesDesdeAPI();
+      if (tieneTokenValido()) {
+        btnAdmin.style.display = 'block';
+      }
+      // Capturar Ctrl+Shift+A para iniciar sesión Admin
+      window.addEventListener('keydown', async (e) => {
+        if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+          e.preventDefault();
+          await iniciarSesionAdmin();
+        }
+      });
+    });
+
+    // 2) Cargar todas las promociones desde el servidor
+    async function cargarPromocionesDesdeAPI() {
+      contPromo.innerHTML = "";
+      try {
+        const resp = await fetch(`${BACKEND_URL}/api/promociones`);
+        if (!resp.ok) throw new Error("No se pudieron cargar promociones.");
+        const arr = await resp.json();
+        if (!arr.length) {
+          contPromo.innerHTML = `<p class="vacio">No hay productos en promoción por el momento.</p>`;
+          return;
+        }
+        arr.forEach(prod => mostrarProductoPromo(prod));
+      } catch (err) {
+        console.error("Error al cargar promociones:", err);
+        contPromo.innerHTML = `<p class="vacio">Error al cargar las promociones.</p>`;
+      }
+    }
+
+    // 3) Renderizar tarjeta individual de cada promoción
+    function mostrarProductoPromo(prod) {
+      const precioOriginal = prod.precio;
+      const descuento      = parseInt(prod.promo);
+      const precioFinal    = Math.round(precioOriginal * (1 - descuento / 100));
+
+      const div = document.createElement('div');
+      div.className = 'producto';
+
+      // Badge del porcentaje
+      const badge = document.createElement('div');
+      badge.className = 'descuento-badge';
+      badge.textContent = `-${descuento}%`;
+      div.appendChild(badge);
+
+      // Imagen clickeable
+      const enlace = document.createElement('a');
+      enlace.href = `detalle.html?categoria=${encodeURIComponent(prod.categoria)}&id=${prod._id}`;
+      enlace.target = '_blank';
+      const img = document.createElement('img');
+      img.src = (prod.imagenes && prod.imagenes[0]) || '';
+      img.alt = prod.nombre;
+      enlace.appendChild(img);
+      div.appendChild(enlace);
+
+      // Nombre
+      const h3 = document.createElement('h3');
+      h3.textContent = prod.nombre;
+      div.appendChild(h3);
+
+      // Precio final + original tachado
+      const pPrecio = document.createElement('p');
+      pPrecio.innerHTML = `
+        <span style="font-size: 1.1rem; font-weight: bold;">$${precioFinal.toLocaleString()}</span>
+        <span style="text-decoration: line-through; color: gray; margin-left: 6px;">
+          $${precioOriginal.toLocaleString()}
+        </span>`;
+      div.appendChild(pPrecio);
+
+      // Paleta de colores
+      const pCol = document.createElement('p');
+      pCol.textContent = "Colores:";
+      div.appendChild(pCol);
+
+      const palette = document.createElement('div');
+      palette.className = 'color-palette';
+      if (Array.isArray(prod.colores) && prod.colores.length) {
+        prod.colores.forEach(colorNombre => {
+          const circle = document.createElement('span');
+          circle.className = 'color-circle';
+          const name = colorNombre.trim().toLowerCase();
+          // Diccionario español → CSS
+          const dic = {
+            rojo:    "red",
+            verde:   "green",
+            azul:    "blue",
+            negro:   "black",
+            blanco:  "white",
+            amarillo:"yellow",
+            naranja: "orange",
+            morado:  "purple",
+            rosado:  "pink",
+            gris:    "gray",
+            marron:  "brown",
+            marrón:  "brown",
+            cian:    "cyan",
+            fucsia:  "magenta"
+          };
+          if (dic[name]) {
+            circle.style.backgroundColor = dic[name];
+          } else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(name)) {
+            circle.style.backgroundColor = name;
+          } else {
+            circle.style.backgroundColor = "#fff";
+          }
+          palette.appendChild(circle);
+        });
+      } else {
+        const circle = document.createElement('span');
+        circle.className = 'color-circle';
+        circle.style.backgroundColor = "#fff";
+        palette.appendChild(circle);
+      }
+      div.appendChild(palette);
+
+      // Botón “Ver detalles / Añadir al carrito”
+      const btnCar = document.createElement('button');
+      btnCar.className = 'btn-carrito';
+      btnCar.textContent = 'Ver detalles';
+      btnCar.onclick = () => {
+        window.open(`detalle.html?categoria=${encodeURIComponent(prod.categoria)}&id=${prod._id}`, "_blank");
+      };
+      div.appendChild(btnCar);
+
+      contPromo.appendChild(div);
+    }
+
+    // 4) Función para iniciar sesión Admin (Ctrl+Shift+A)
+    async function iniciarSesionAdmin() {
+      const username = prompt("👉 Ingrese Usuario (modo Admin):", "");
+      if (!username) return;
+      const password = prompt("👉 Ingrese Contraseña (modo Admin):", "");
+      if (!password) return;
+
+      try {
+        const resp = await fetch(`${BACKEND_URL}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        if (!resp.ok) {
+          const err = await resp.json();
+          alert(`❌ ${err.error || 'Credenciales inválidas.'}`);
+          return;
+        }
+        const { token } = await resp.json();
+        localStorage.setItem('admin_jwt', token);
+        alert("✔️ Sesión Admin iniciada correctamente.");
+        btnAdmin.style.display = 'block';
+        mostrarFormularioAdmin();
+      } catch (error) {
+        console.error("Error al conectar con backend:", error);
+        alert("⚠️ Error al contactar al servidor de autenticación.");
+      }
+    }
+
+    // 5) Verificar si hay un token JWT válido
+    function tieneTokenValido() {
+      const token = localStorage.getItem('admin_jwt');
+      if (!token) return false;
+      try {
+        const payloadBase64 = token.split('.')[1];
+        const decoded = JSON.parse(atob(payloadBase64));
+        const ahora = Math.floor(Date.now() / 1000);
+        return decoded.exp && decoded.exp > ahora;
+      } catch {
+        return false;
+      }
+    }
+
+    // 6) Botón “Modo Admin”: mostrar/ocultar el formulario
+    btnAdmin.addEventListener('click', () => {
+      if (!tieneTokenValido()) {
+        alert("🚫 Debes iniciar sesión como Admin.");
+        return;
+      }
+      if (form.style.display === 'block') {
+        form.style.display = 'none';
+      } else {
+        prepararFormularioParaAgregar();
+        form.style.display = 'block';
+      }
+    });
+
+    // 7) Preparar el formulario para “Agregar nueva promoción”
+    function prepararFormularioParaAgregar() {
+      formTitulo.textContent = "Agregar nueva promoción";
+      submitBtn.textContent = "Añadir promoción";
+      inputProductoId.value = "";
+      inputNombre.value = "";
+      inputDescripcion.value = "";
+      inputTallas.value = "";
+      inputColores.value = "";
+      inputPrecio.value = "";
+      inputPromo.value = "";
+      form.reset();
+      inputImgs.required = true;
+    }
+
+    // 8) Manejo del formulario (submit) → crear o editar promoción en el backend
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!tieneTokenValido()) {
+        alert("🚫 Debes iniciar sesión como Admin para guardar cambios.");
+        return;
+      }
+
+      // Leer campo de ID (si existe, estamos en EDICIÓN; si está vacío, en CREACIÓN)
+      const idEdicion = inputProductoId.value.trim();
+      // Leer campos del formulario
+      const nombre      = inputNombre.value.trim();
+      const descripcion = inputDescripcion.value.trim();
+      const tallas      = inputTallas.value.split(',').map(s => s.trim()).filter(s => s);
+      const colores     = inputColores.value.split(',').map(s => s.trim()).filter(s => s);
+      const precioVal   = parseFloat(inputPrecio.value);
+      const promoVal    = parseInt(inputPromo.value);
+      const archivos    = inputImgs.files;
+
+      if (!nombre || isNaN(precioVal) || isNaN(promoVal)) {
+        alert("Nombre, precio y promo son obligatorios y deben ser números válidos.");
+        return;
+      }
+
+      // Procesar imágenes a Base64 (solo si creamos o subimos nuevas imágenes en edición)
+      let imagenesArray = [];
+      if (!idEdicion || (archivos && archivos.length > 0)) {
+        if (!archivos || archivos.length === 0) {
+          alert("Debes seleccionar al menos una imagen.");
+          return;
+        }
+        try {
+          const promesas = Array.from(archivos).map(file => {
+            return new Promise((resolve, reject) => {
+              if (!file.type.startsWith("image/")) {
+                reject(new Error(`"${file.name}" no es una imagen.`));
+                return;
+              }
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = () => reject(new Error(`Error leyendo "${file.name}".`));
+              reader.readAsDataURL(file);
+            });
+          });
+          const resultados = await Promise.allSettled(promesas);
+          imagenesArray = resultados
+            .filter(r => r.status === "fulfilled")
+            .map(r => r.value);
+          if (imagenesArray.length === 0) {
+            alert("No se pudo procesar ninguna imagen válida.");
+            return;
+          }
+        } catch (err) {
+          console.error("Error al procesar imágenes:", err);
+          alert("Error al procesar las imágenes.");
+          return;
+        }
+      }
+
+      // Construir payload para la API
+      const productoData = {
+        nombre,
+        descripcion,
+        tallas,
+        colores,
+        precio: precioVal,
+        promo: promoVal,
+        imagenes: imagenesArray,
+        categoria: "promociones"
+      };
+
+      try {
+        let resp;
+        if (idEdicion) {
+          // EDICIÓN: PUT a /api/products/:id
+          resp = await fetch(`${BACKEND_URL}/api/products/${idEdicion}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('admin_jwt')}`
+            },
+            body: JSON.stringify(productoData)
+          });
+        } else {
+          // CREACIÓN: POST a /api/promociones
+          resp = await fetch(`${BACKEND_URL}/api/promociones`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('admin_jwt')}`
+            },
+            body: JSON.stringify(productoData)
+          });
+        }
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.error || 'Error al guardar promoción');
+        }
+        alert(idEdicion ? "✔️ Promoción actualizada correctamente." : "✔️ Promoción agregada correctamente.");
+        form.reset();
+        form.style.display = 'none';
+        cargarPromocionesDesdeAPI();
+      } catch (err) {
+        console.error("Error al guardar promoción:", err);
+        alert("Error al guardar promoción.");
+      }
+    });
+  </script>
+</body>
+</html>
