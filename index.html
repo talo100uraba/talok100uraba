@@ -8,9 +8,6 @@
 </head>
 <body style="padding-top: 80px;">
 
-  <!-- ===========================
-       ENCABEZADO ORIGINAL
-       =========================== -->
   <header>
     <div id="logo">
       <img src="imagenes/talo.png" alt="Logo Talø">
@@ -18,7 +15,6 @@
     </div>
   </header>
 
-  <!-- Menú fijo con botón hamburguesa ORIGINAL -->
   <div class="menu-container">
     <button class="menu-toggle" onclick="toggleMenu()">☰</button>
     <nav id="menu" class="menu-links">
@@ -30,13 +26,11 @@
     </nav>
   </div>
 
-  <!-- HERO ORIGINAL -->
   <div class="hero">
     <h2>¡Explora nuestro catálogo exclusivo!</h2>
     <p>Encuentra las mejores prendas y accesorios al mejor precio</p>
   </div>
 
-  <!-- SECCIONES ORIGINALES -->
   <div class="secciones">
     <div class="seccion" id="camisas">
       <div class="imagen">
@@ -99,34 +93,26 @@
     </div>
   </div>
 
-  <!-- PIE DE PÁGINA ORIGINAL -->
   <footer>
     <h3>Acerca de Nosotros</h3>
     <p>Somos una marca creada con amor para ti. Aquí encontrarás calidad, estilo y precios justos.</p> 
-      <p>¡Muy pronto nuevos productos y sorpresas!.</p>
-
+    <p>¡Muy pronto nuevos productos y sorpresas!</p>
     <div style="margin-top: 30px;">
       <a href="https://www.instagram.com/talo_100_urbano/" target="_blank">
         <img src="imagenes/instagram.png" alt="Instagram" style="width: 40px; height: 40px; margin-right: 10px;">
       </a>
     </div>
-
     <div style="margin-top: 20px;">
       <h4>Contáctanos</h4>
       <p>📞 +57 324 3799852</p>
     </div>
   </footer>
 
-  <!-- VISOR DE IMÁGENES ORIGINAL -->
   <div id="visor" onclick="cerrarVisor()">
     <img src="" alt="imagen ampliada" id="imagenGrande">
   </div>
 
-  <!-- ====================================================
-       SCRIPTS DE ANIMACIONES, HAMBURGUESA, ETC. (ORIGINALES)
-       ==================================================== -->
   <script>
-    // Tu código original de IntersectionObserver y toggleMenu:
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -136,7 +122,6 @@
         }
       });
     }, { threshold: 0.2 });
-
     document.querySelectorAll('.seccion').forEach(seccion => {
       observer.observe(seccion);
     });
@@ -150,19 +135,14 @@
     }
   </script>
 
-  <!-- ============================================================== 
-       NUEVO BLOQUE “Modo Admin” (fetch a /login + JWT) 
-       ============================================================== -->
   <script>
     const BACKEND_URL = "https://taloadmin-backend.onrender.com";
 
-    // 1) Función para intentar login contra /login
     async function iniciarSesionAdmin() {
       const username = prompt("👉 Ingrese Usuario (modo Admin):", "");
       if (!username) return;
       const password = prompt("👉 Ingrese Contraseña (modo Admin):", "");
       if (!password) return;
-
       try {
         const resp = await fetch(`${BACKEND_URL}/login`, {
           method: 'POST',
@@ -184,130 +164,86 @@
       }
     }
 
-    // 2) Verifica si hay token en localStorage y no está expirado
     function tieneTokenValido() {
       const token = localStorage.getItem('admin_jwt');
       if (!token) return false;
       try {
-        const payloadBase64 = token.split('.')[1];
-        const decoded = JSON.parse(atob(payloadBase64));
-        return decoded.exp && decoded.exp > Math.floor(Date.now() / 1000);
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.exp && payload.exp > Math.floor(Date.now() / 1000);
       } catch {
         return false;
       }
     }
 
-    // 3) Habilita modo Admin: muestra elementos y hace editable
     function habilitarModoAdmin() {
-  document.body.classList.add("admin-activo");
-  document.querySelectorAll("[data-admin='solo']").forEach(el => {
-    el.classList.remove("hidden");
-  });
+      document.body.classList.add("admin-activo");
+      document.querySelectorAll("[data-admin='solo']").forEach(el => {
+        el.classList.remove("hidden");
+      });
+      document.querySelectorAll("img").forEach(img => {
+        const parent = img.parentElement;
+        if (getComputedStyle(parent).position === "static") {
+          parent.style.position = "relative";
+        }
+        const icono = document.createElement("div");
+        icono.innerText = "✎";
+        Object.assign(icono.style, {
+          position: "absolute",
+          top: "8px",
+          right: "8px",
+          background: "rgba(0,0,0,0.6)",
+          color: "#fff",
+          padding: "2px 5px",
+          borderRadius: "4px",
+          cursor: "pointer",
+          zIndex: "10",
+          fontSize: "16px",
+          userSelect: "none"
+        });
+        parent.appendChild(icono);
+        const inputFile = document.createElement("input");
+        inputFile.type = "file";
+        inputFile.accept = "image/*";
+        inputFile.style.display = "none";
+        parent.appendChild(inputFile);
+        icono.addEventListener("click", e => {
+          e.stopPropagation();
+          inputFile.click();
+        });
+        inputFile.addEventListener("change", e => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = ev => { img.src = ev.target.result; };
+          reader.readAsDataURL(file);
+          inputFile.value = "";
+        });
+        img.style.transition = "outline .2s";
+        img.addEventListener("mouseenter", () => { img.style.outline = "2px dashed orange"; });
+        img.addEventListener("mouseleave", () => { img.style.outline = "none"; });
+      });
 
-  // ------------------------------------------------------------
-  //  NUEVA LÓGICA: ICONO DE EDICIÓN + SELECTOR DE ARCHIVO LOCAL
-  // ------------------------------------------------------------
-
-  document.querySelectorAll("img").forEach(img => {
-    // 1) Nos aseguramos de que el contenedor padre tenga position: relative
-    const parent = img.parentElement;
-    if (getComputedStyle(parent).position === "static") {
-      parent.style.position = "relative";
-      // Si el padre era un <a> o un <div> sin posición, lo convertimos a relativo
-    }
-
-    // 2) Creamos un <div> que actuará como icono de lápiz sobre la imagen
-    const icono = document.createElement("div");
-    icono.innerText = "✎";
-    icono.style.position = "absolute";
-    icono.style.top = "8px";
-    icono.style.right = "8px";
-    icono.style.background = "rgba(0,0,0,0.6)";
-    icono.style.color = "#fff";
-    icono.style.padding = "2px 5px";
-    icono.style.borderRadius = "4px";
-    icono.style.cursor = "pointer";
-    icono.style.zIndex = "10";
-    icono.style.fontSize = "16px";
-    icono.style.userSelect = "none";
-    parent.appendChild(icono);
-
-    // 3) Creamos un <input type="file"> oculto para seleccionar la nueva imagen
-    const inputFile = document.createElement("input");
-    inputFile.type = "file";
-    inputFile.accept = "image/*";
-    inputFile.style.display = "none";
-    parent.appendChild(inputFile);
-
-    // 4) Al hacer clic en el icono, disparamos el selector de archivos
-    icono.addEventListener("click", (e) => {
-      e.stopPropagation();
-      inputFile.click();
-    });
-
-    // 5) Cuando el usuario selecciona un archivo, usamos FileReader para mostrarlo
-    inputFile.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(ev) {
-        img.src = ev.target.result;
-      };
-      reader.readAsDataURL(file);
-      // Limpiamos el input para que pueda reabrir el mismo archivo si se desea
-      inputFile.value = "";
-    });
-
-    // 6) Añadimos un pequeño efecto visual al pasar el puntero (no obligatorio)
-    img.style.transition = "outline .2s";
-    img.addEventListener("mouseenter", () => {
-      img.style.outline = "2px dashed orange";
-    });
-    img.addEventListener("mouseleave", () => {
-      img.style.outline = "none";
-    });
-  });
-
-  // ------------------------------------------------------------
-  //  (Opcional) Mostrar un banner “Modo Admin Activo”
-  // ------------------------------------------------------------
-  if (!document.getElementById("bannerAdmin")) {
-    const banner = document.createElement("div");
-    banner.id = "bannerAdmin";
-    banner.innerText = "🔒 Modo Admin Activo";
-    banner.style.position = "fixed";
-    banner.style.bottom = "10px";
-    banner.style.right = "10px";
-    banner.style.background = "#000";
-    banner.style.color = "#fff";
-    banner.style.padding = "8px 12px";
-    banner.style.zIndex = "2000";
-    banner.style.borderRadius = "4px";
-    document.body.appendChild(banner);
-  }
-}
-
-
-      // 3.3) Banner “Modo Admin Activo”
       if (!document.getElementById("bannerAdmin")) {
         const banner = document.createElement("div");
         banner.id = "bannerAdmin";
         banner.innerText = "🔒 Modo Admin Activo";
-        banner.style.position = "fixed";
-        banner.style.bottom = "10px";
-        banner.style.right = "10px";
-        banner.style.background = "#000";
-        banner.style.color = "#fff";
-        banner.style.padding = "8px 12px";
-        banner.style.zIndex = "2000";
-        banner.style.borderRadius = "4px";
+        Object.assign(banner.style, {
+          position: "fixed",
+          bottom: "10px",
+          right: "10px",
+          background: "#000",
+          color: "#fff",
+          padding: "8px 12px",
+          zIndex: "2000",
+          borderRadius: "4px"
+        });
         document.body.appendChild(banner);
       }
-    
+    }
 
-    // 4) (Opcional) Cerrar sesión Admin
     function cerrarSesionAdmin() {
       localStorage.removeItem('admin_jwt');
+      sessionStorage.removeItem('modoAdminActivo');
       document.body.classList.remove("admin-activo");
       document.querySelectorAll("[data-admin='solo']").forEach(el => {
         el.classList.add("hidden");
@@ -325,14 +261,15 @@
       alert("🔒 Sesión Admin cerrada.");
     }
 
-    // 5) Al cargar, si hay token válido, habilitamos
     window.addEventListener("DOMContentLoaded", () => {
-      if (tieneTokenValido()) {
+      const esDesktop = !('ontouchstart' in window);
+      const tokenOk = tieneTokenValido();
+      const mobileFlag = sessionStorage.getItem("modoAdminActivo") === "true";
+      if ((esDesktop && tokenOk) || (!esDesktop && mobileFlag)) {
         habilitarModoAdmin();
       }
-      // Vincular Ctrl+Shift+A
-      if (!('ontouchstart' in window)) {
-        window.addEventListener("keydown", async (e) => {
+      if (esDesktop) {
+        window.addEventListener("keydown", async e => {
           if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
             e.preventDefault();
             await iniciarSesionAdmin();
@@ -341,24 +278,26 @@
       }
     });
   </script>
-<button id="btnAdminLogin">Modo Admin</button>
-<script>
-  document.getElementById("btnAdminLogin").addEventListener("click", async () => {
-    if (!('ontouchstart' in window)) return; // solo móviles
-    const usu = prompt("Usuario Admin:");
-    const pass = prompt("Contraseña:");
-    if (!usu || !pass) return;
 
-    const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
-    const hashHex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-    if (usu === "admin" && hashHex === "ef92b778bafe771e89245b89ecbc216e9abf5ed5580c9b8e355d72c7a2cd4d76") {
-      sessionStorage.setItem("modoAdminActivo", "true");
-      location.reload();
-    } else {
-      alert("Credenciales incorrectas.");
-    }
-  });
-</script>
+  <button id="btnAdminLogin">Modo Admin</button>
+  <script>
+    document.getElementById("btnAdminLogin").addEventListener("click", async () => {
+      if (!('ontouchstart' in window)) return;
+      const usu = prompt("Usuario Admin:");
+      const pass = prompt("Contraseña:");
+      if (!usu || !pass) return;
+      const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+      const hashHex = Array.from(new Uint8Array(hash))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      if (usu === "admin" && hashHex === "ef92b778bafe771e89245b89ecbc216e9abf5ed5580c9b8e355d72c7a2cd4d76") {
+        sessionStorage.setItem("modoAdminActivo", "true");
+        location.reload();
+      } else {
+        alert("Credenciales incorrectas.");
+      }
+    });
+  </script>
 
 </body>
 </html>
