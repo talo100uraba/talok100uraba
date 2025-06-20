@@ -345,7 +345,6 @@ header {
 #logo h1 {
   font-size: 1.8rem;
 }
-/* Botón invisible */
 #btnAdminLogin {
   display: flex !important;
   width: 1px !important;
@@ -357,5 +356,7 @@ header {
   clip: rect(0, 0, 0, 0) !important;
   white-space: nowrap !important;
 }
+
+
 
 
