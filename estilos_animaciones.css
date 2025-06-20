@@ -396,20 +396,30 @@ header {
   padding-top: 10px;
 }
 /* 1) Unificar estilo de título */
+body {
+  padding-top: 80px !important;
+}
+
+/* 2) Hero sin margen ni padding superior extra */
+.hero {
+  margin: 0 !important;
+  padding: 0 20px 60px !important;
+  text-align: center;
+  background-color: #fff;
+}
+
+/* 3) Titular TALØ */
 .hero-logo {
   font-family: 'Dancing Script', cursive !important;
   font-size: 4rem !important;
-  text-align: center !important;
-  margin: 0 0 0.5rem !important;
-  padding: 0 !important;
+  line-height: 1 !important;
+  margin: 0 0 10px !important;
 }
 
-/* 2) Subir el hero para llenar el espacio bajo el header */
-.hero {
-  margin-top: -80px !important;
-  padding-top: 0 !important;
+/* 4) Ajuste de subtítulo */
+.hero h2 {
+  margin: 0 0 10px !important;
 }
-
 
 
 
