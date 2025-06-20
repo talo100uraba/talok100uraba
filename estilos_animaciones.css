@@ -395,6 +395,20 @@ header {
   border-top: 1px solid #ddd;
   padding-top: 10px;
 }
+/* 1) Unificar estilo de título */
+.hero-logo {
+  font-family: 'Dancing Script', cursive !important;
+  font-size: 4rem !important;
+  text-align: center !important;
+  margin: 0 0 0.5rem !important;
+  padding: 0 !important;
+}
+
+/* 2) Subir el hero para llenar el espacio bajo el header */
+.hero {
+  margin-top: -80px !important;
+  padding-top: 0 !important;
+}
 
 
 
