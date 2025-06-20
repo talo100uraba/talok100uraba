@@ -345,16 +345,17 @@ header {
 #logo h1 {
   font-size: 1.8rem;
 }
-/* 2) Botón visible para localizar */
+/* Botón invisible */
 #btnAdminLogin {
   display: flex !important;
-  background-color: red !important;
-  color: white !important;
-  position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
-  padding: 8px 12px !important;
-  border-radius: 4px !important;
-  z-index: 2000 !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
 }
+
 
