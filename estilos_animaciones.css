@@ -348,4 +348,10 @@ header {
 #btnAdminLogin {
   display: none !important;
 }
+@media (max-width: 600px) {
+  #btnAdminLogin {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
 
