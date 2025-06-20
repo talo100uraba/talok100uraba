@@ -300,25 +300,13 @@
     });
   </script>
 
-  <button id="btnAdminLogin">Modo Admin</button>
-  <script>
-    document.getElementById("btnAdminLogin").addEventListener("click", async () => {
-      if (!('ontouchstart' in window)) return;
-      const usu = prompt("Usuario Admin:");
-      const pass = prompt("Contraseña:");
-      if (!usu || !pass) return;
-      const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
-      const hashHex = Array.from(new Uint8Array(hash))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-      if (usu === "admin" && hashHex === "ef92b778bafe771e89245b89ecbc216e9abf5ed5580c9b8e355d72c7a2cd4d76") {
-        sessionStorage.setItem("modoAdminActivo", "true");
-        location.reload();
-      } else {
-        alert("Credenciales incorrectas.");
-      }
-    });
-  </script>
+<button id="btnAdminLogin">Modo Admin</button>
+<script>
+  document
+    .getElementById("btnAdminLogin")
+    .addEventListener("click", iniciarSesionAdmin);
+</script>
+
 
 </body>
 </html>
