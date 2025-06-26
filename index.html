@@ -312,6 +312,16 @@
     .addEventListener("click", iniciarSesionAdmin);
 </script>
 <script>
+window.productsList = [
+  { id: 1, imagen: 'imagenes/camisa.jpg', nombre: 'Camisas', precio: '$25' },
+  { id: 2, imagen: 'imagenes/shorts.jpg', nombre: 'Shorts', precio: '$20' },
+  { id: 3, imagen: 'imagenes/gorra.jpg', nombre: 'Gorras', precio: '$15' },
+  { id: 4, imagen: 'imagenes/colonia.jpg', nombre: 'Colonias', precio: '$30' },
+  { id: 5, imagen: 'imagenes/descuento.png', nombre: 'Promociones', precio: '$10' }
+];
+</script>
+
+<script>
 document.addEventListener("DOMContentLoaded", () => {
   const KEY_IDS = "featuredIds";
   const KEY_TS  = "featuredTs";
