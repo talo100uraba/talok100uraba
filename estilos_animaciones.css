@@ -420,6 +420,22 @@ body {
 .hero h2 {
   margin: 0 0 10px !important;
 }
+@media screen and (max-width: 768px) {
+  .secciones {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .secciones::-webkit-scrollbar {
+    display: none;
+  }
+  .secciones .seccion {
+    flex: 0 0 auto;
+    margin-right: 20px;
+  }
+}
 
 
 
