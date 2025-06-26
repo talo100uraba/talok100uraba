@@ -312,60 +312,50 @@
     .addEventListener("click", iniciarSesionAdmin);
 </script>
 <script>
-document.addEventListener("DOMContentLoaded", async () => {
-  // 1) Trae el catálogo real
-  const resp = await fetch(`${BACKEND_URL}/products`);
-  const productsList = await resp.json();  // [{id, imagen, nombre, precio, ...}, ...]
-
-  // 2) Lógica semanal de Valentina
-  const KEY_IDS = "featuredIds";
-  const KEY_TS  = "featuredTs";
-  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-  const maxDisplay = 5;
-
-  const catalog = productsList.filter(p => p.id && p.imagen && p.nombre);
-  const displayCount = Math.min(maxDisplay, catalog.length);
-
-  let ids = JSON.parse(localStorage.getItem(KEY_IDS) || "[]");
-  let ts  = parseInt(localStorage.getItem(KEY_TS) || "0", 10);
-
-  const needRegen = !ids.length || ids.length !== displayCount || (Date.now() - ts) > WEEK_MS;
-  if (needRegen) {
-    const pool = catalog.flatMap(p => p.descuento > 0 ? [p, p] : [p]);
-    const nextIds = [];
-    while (nextIds.length < displayCount && pool.length) {
-      const idx  = Math.floor(Math.random() * pool.length);
-      const pick = pool.splice(idx, 1)[0];
-      if (!nextIds.includes(pick.id)) nextIds.push(pick.id);
-    }
-    ids = nextIds;
-    localStorage.setItem(KEY_IDS, JSON.stringify(ids));
-    localStorage.setItem(KEY_TS, Date.now().toString());
+  // calcula número de semana
+  function getWeekNumber(d) {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
   }
-
-  // 3) Inserta los productos reales
-  const container = document.getElementById("destacados-grid");
-  container.innerHTML = "";
-  ids.forEach(id => {
-    const p = catalog.find(x => x.id === id);
-    const card = document.createElement("div");
-    card.className = "producto producto-card";
-    card.innerHTML = `
-      <div class="imagen">
-        <img src="${p.imagen}" alt="${p.nombre}">
-      </div>
-      <div class="contenido">
-        <h3>${p.nombre}</h3>
-        <p>${p.precio}</p>
-      </div>
-    `;
-    container.appendChild(card);
+  // rota y toma máximo 5
+  function selectWeekly(arr) {
+    const week = getWeekNumber(new Date());
+    const start = week % arr.length;
+    const rot = arr.slice(start).concat(arr.slice(0, start));
+    return rot.slice(0, 5);
+  }
+  document.addEventListener("DOMContentLoaded", async () => {
+    const resp = await fetch(BACKEND_URL);
+    const todos = await resp.json();
+    // categorías que tienes en secciones
+    const cats = ["camisas","shorts","gorras","lociones","promociones"];
+    // filtra todos los productos de esas categorías
+    const pool = cats.flatMap(c => todos.filter(p => p.categoria === c));
+    const destacados = pool.length
+      ? selectWeekly(pool)
+      : [];
+    const cont = document.getElementById("destacados-grid");
+    cont.innerHTML = "";
+    destacados.forEach(p => {
+      const card = document.createElement("div");
+      card.className = "producto producto-card";
+      card.innerHTML = `
+        <div class="imagen">
+          <img src="${p.imagenes[0]||p.imagen}" alt="${p.nombre}">
+        </div>
+        <div class="contenido">
+          <h3>${p.nombre}</h3>
+          <p>${p.promo
+            ? Math.round(p.precio*(1 - p.promo/100)).toLocaleString()
+            : p.precio.toLocaleString()
+          }</p>
+        </div>`;
+      cont.appendChild(card);
+    });
   });
-});
 </script>
-
-
-
 
 </body>
 </html>
