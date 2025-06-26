@@ -409,19 +409,18 @@ body {
 
 @media screen and (max-width: 768px) {
   .secciones {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 0 10px;
-  }
-  .secciones::-webkit-scrollbar {
-    display: none;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 0 10px !important;
+    gap: 0 !important;
   }
   .secciones .seccion {
-    flex: 0 0 auto;
-    width: 250px;
-    margin-right: 10px;
+    flex: 0 0 auto !important;
+    width: 250px !important;
+    margin-right: 10px !important;
   }
 }
 
