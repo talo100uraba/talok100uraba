@@ -312,47 +312,73 @@
     .addEventListener("click", iniciarSesionAdmin);
 </script>
 <script>
-  // calcula número de semana
+
+
+  // 1) Cálculo de semana (rotación semanal)
   function getWeekNumber(d) {
     const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
     const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
     return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
   }
-  // rota y toma máximo 5
+
+  // 2) Rota el array y toma máximo 5
   function selectWeekly(arr) {
+    if (!arr.length) return [];
     const week = getWeekNumber(new Date());
     const start = week % arr.length;
-    const rot = arr.slice(start).concat(arr.slice(0, start));
-    return rot.slice(0, 5);
+    const rotated = arr.slice(start).concat(arr.slice(0, start));
+    return rotated.slice(0, 5);
   }
+
   document.addEventListener("DOMContentLoaded", async () => {
+    // 3) Trae todos los productos
     const resp = await fetch(`${BACKEND_URL}/api/products`);
-const all  = await resp.json();
-    // categorías que tienes en secciones
-    const cats = ["camisas","shorts","gorras","lociones","promociones"];
-    // filtra todos los productos de esas categorías
-    const pool = cats.flatMap(c => all.filter(p => p.categoria === c));
-    const destacados = pool.length
-      ? selectWeekly(pool)
-      : [];
-    const cont = document.getElementById("destacados-grid");
-    cont.innerHTML = "";
-    destacados.forEach(p => {
-      const card = document.createElement("div");
-      card.className = "producto producto-card";
-      card.innerHTML = `
-        <div class="imagen">
-          <img src="${p.imagenes[0]||p.imagen}" alt="${p.nombre}">
-        </div>
-        <div class="contenido">
-          <h3>${p.nombre}</h3>
-          <p>${p.promo
-            ? Math.round(p.precio*(1 - p.promo/100)).toLocaleString()
-            : p.precio.toLocaleString()
-          }</p>
-        </div>`;
-      cont.appendChild(card);
+    if (!resp.ok) return console.error("Error cargando productos:", resp.status);
+    const all = await resp.json();
+
+    const cats = ["camisas", "shorts", "gorras", "lociones", "promociones"];
+    const container = document.getElementById("destacados-grid");
+    container.innerHTML = "";
+
+    // 4) Para cada categoría, selecciona hasta 5 productos y los renderiza
+    cats.forEach(cat => {
+      const listado = all.filter(p => p.categoria === cat);
+      const destacados = selectWeekly(listado);
+      destacados.forEach(p => {
+        // URL al detalle (ajusta según tu routing)
+        const urlDetalle = `detalle.html?id=${p._id}`;
+
+        // Precio con o sin descuento
+        let priceHTML;
+        if (p.promo) {
+          const precioFinal = Math.round(p.precio * (1 - p.promo / 100));
+          priceHTML = `
+            <span class="precio-descuento">$${precioFinal.toLocaleString()}</span>
+            <del class="precio-original">$${p.precio.toLocaleString()}</del>
+            <div class="badge">-${p.promo}%</div>
+          `;
+        } else {
+          priceHTML = `<span class="precio-simple">$${p.precio.toLocaleString()}</span>`;
+        }
+
+        // Construye la card HTML
+        const card = document.createElement("div");
+        card.className = "producto producto-card";
+        card.innerHTML = `
+          <a href="${urlDetalle}">
+            <div class="imagen">
+              <img src="${p.imagenes[0] || p.imagen}" alt="${p.nombre}">
+            </div>
+            <div class="contenido">
+              <h3>${p.nombre}</h3>
+              ${priceHTML}
+            </div>
+          </a>
+          <button class="btn-carrito">Añadir al carrito</button>
+        `;
+        container.appendChild(card);
+      });
     });
   });
 </script>
