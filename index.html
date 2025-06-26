@@ -312,43 +312,53 @@
     .addEventListener("click", iniciarSesionAdmin);
 </script>
 <script>
-    // Límite y duración
-    const FEATURED_LIMIT = 5;           // máximo 5 productos
-    const WEEK_DURATION_MS = 7 * 24 * 60 * 60 * 1000;  // 7 días
+document.addEventListener("DOMContentLoaded", () => {
+  const KEY_IDS = "featuredIds";
+  const KEY_TS  = "featuredTs";
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  const maxDisplay = 5;
 
-    // Calcula número de semana (rotación semanal)
-    function getWeekNumber(d) {
-      const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-      date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
-      const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-      return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  const catalog = (window.productsList || []).filter(p => p.id && p.imagen && p.nombre);
+  const displayCount = Math.min(maxDisplay, catalog.length);
+
+  let ids = JSON.parse(localStorage.getItem(KEY_IDS) || "[]");
+  let ts  = parseInt(localStorage.getItem(KEY_TS) || "0", 10);
+
+  const needRegen = !ids.length || ids.length !== displayCount || (Date.now() - ts) > WEEK_MS;
+  if (needRegen) {
+    const pool = catalog.flatMap(p => p.descuento > 0 ? [p, p] : [p]);
+    const nextIds = [];
+    while (nextIds.length < displayCount && pool.length) {
+      const idx  = Math.floor(Math.random() * pool.length);
+      const pick = pool.splice(idx, 1)[0];
+      if (!nextIds.includes(pick.id)) nextIds.push(pick.id);
     }
+    ids = nextIds;
+    localStorage.setItem(KEY_IDS, JSON.stringify(ids));
+    localStorage.setItem(KEY_TS, Date.now().toString());
+  }
 
-    // Rota array según semana y toma los primeros FEATURED_LIMIT
-    function getWeeklyProducts(arr) {
-      const start = getWeekNumber(new Date()) % arr.length;
-      const rotated = arr.slice(start).concat(arr.slice(0, start));
-      return rotated.slice(0, FEATURED_LIMIT);
-    }
+  const container = document.getElementById("destacados-grid");
+  container.innerHTML = "";
+  ids.forEach(id => {
+    const p = catalog.find(x => x.id === id);
+    if (!p) return;
+    const card = document.createElement("div");
+    card.className = "producto producto-card";
+    card.innerHTML = `
+      <div class="imagen">
+        <img src="${p.imagen}" alt="${p.nombre}">
+      </div>
+      <div class="contenido">
+        <h3>${p.nombre}</h3>
+        <p>${p.precio}</p>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+});
+</script>
 
-    // Inserta en DOM
-    function displayFeaturedProducts() {
-      // aquí tienes que tener un array `productsList` con tus productos
-      const featured = getWeeklyProducts(productsList);
-      const container = document.getElementById('destacados-grid');
-      featured.forEach(p => {
-        const card = document.createElement('div');
-        card.className = 'producto producto-card';
-        card.innerHTML = `
-          <div class="imagen"><img src="${p.imagen}" alt="${p.nombre}"></div>
-          <div class="contenido"><h3>${p.nombre}</h3><p>${p.precio}</p></div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    document.addEventListener('DOMContentLoaded', displayFeaturedProducts);
-  </script>
 
 
 </body>
