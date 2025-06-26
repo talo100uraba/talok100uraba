@@ -410,21 +410,21 @@ body {
 @media screen and (max-width: 768px) {
   .secciones {
     display: flex;
-    flex-direction: row;
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 0 20px;
+    padding: 0 10px;
   }
   .secciones::-webkit-scrollbar {
     display: none;
   }
   .secciones .seccion {
     flex: 0 0 auto;
-    width: auto;
-    margin-right: 20px;
+    width: 250px;
+    margin-right: 10px;
   }
 }
+
 
 
 
