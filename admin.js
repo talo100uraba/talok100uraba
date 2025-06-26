@@ -90,3 +90,39 @@
     alert("🔒 Sesión Admin cerrada.");
   }
 </script>
+// devuelve número ISO de semana
+function getWeekNumber(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
+
+// rota array según semana y devuelve primeros n elementos
+function getWeeklyProducts(arr, n) {
+  const week = getWeekNumber(new Date());
+  const start = week % arr.length;
+  const rotated = arr.slice(start).concat(arr.slice(0, start));
+  return rotated.slice(0, n);
+}
+
+function displayFeaturedProducts() {
+  const all = productsList; // array de todos los productos
+  const featured = getWeeklyProducts(all, 5);
+  const container = document.getElementById('destacados-grid');
+  featured.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'producto-card';
+    card.innerHTML = `
+      <img src="${p.imagen}" alt="${p.nombre}">
+      <h3>${p.nombre}</h3>
+      <p>${p.precio}</p>
+    `;
+    container.appendChild(card);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  displaySections(); // existente
+  displayFeaturedProducts();
+});
