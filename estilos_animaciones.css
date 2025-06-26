@@ -420,31 +420,6 @@ body {
 .hero h2 {
   margin: 0 0 10px !important;
 }
-/* secciones horizontales scrollables */
-.secciones-container {
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.secciones-container::-webkit-scrollbar {
-  display: none;
-}
-.secciones-container > .seccion {
-  flex: 0 0 auto;
-  scroll-snap-align: start;
-}
-
-/* sección Productos Destacados */
-#productos-destacados {
-  margin: 2rem 0;
-}
-#productos-destacados .productos-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1rem;
-}
 
 
 
