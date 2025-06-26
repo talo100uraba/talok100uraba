@@ -466,6 +466,24 @@ body {
 }
 .producto-card a { text-decoration: none; color: inherit; }
 
+/* ================================
+   DESTACADOS: MÓVIL EN DOS COLUMNAS
+   (mantiene carrusel SOLO en .secciones)
+================================== */
+@media screen and (max-width: 768px) {
+  /* Anula el scroll horizontal SOLO en destacados */
+  #productos-destacados .productos-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem !important;
+    padding: 0 20px !important;
+    overflow: visible !important;
+  }
+  #productos-destacados .productos-grid .producto-card {
+    width: auto !important;
+    margin: 0 !important;
+  }
+}
 
 
 
