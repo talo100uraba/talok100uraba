@@ -452,11 +452,6 @@
         }
         card.appendChild(pPrecio);
 
-        // Paleta de colores
-        const pColores = document.createElement('p');
-        pColores.textContent =
-        card.appendChild(pColores);
-
       // Dentro de tu función mostrarProductosEnPantalla, reemplaza el bloque de colores por este:
 
 const arrayDeColores = Array.isArray(prod.colores)
@@ -482,6 +477,7 @@ if (arrayDeColores.length > 0 && arrayDeColores[0] !== '') {
 
   card.appendChild(palette);
 }
+
 
 
 
