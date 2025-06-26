@@ -312,23 +312,20 @@
     .addEventListener("click", iniciarSesionAdmin);
 </script>
 <script>
-window.productsList = [
-  { id: 1, imagen: 'imagenes/camisa.jpg', nombre: 'Camisas', precio: '$25' },
-  { id: 2, imagen: 'imagenes/shorts.jpg', nombre: 'Shorts', precio: '$20' },
-  { id: 3, imagen: 'imagenes/gorra.jpg', nombre: 'Gorras', precio: '$15' },
-  { id: 4, imagen: 'imagenes/colonia.jpg', nombre: 'Colonias', precio: '$30' },
-  { id: 5, imagen: 'imagenes/descuento.png', nombre: 'Promociones', precio: '$10' }
-];
-</script>
+const BACKEND_URL = "https://taloadmin-backend.onrender.com";
 
-<script>
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // 1) Trae el catálogo real
+  const resp = await fetch(`${BACKEND_URL}/products`);
+  const productsList = await resp.json();  // [{id, imagen, nombre, precio, ...}, ...]
+
+  // 2) Lógica semanal de Valentina
   const KEY_IDS = "featuredIds";
   const KEY_TS  = "featuredTs";
   const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
   const maxDisplay = 5;
 
-  const catalog = (window.productsList || []).filter(p => p.id && p.imagen && p.nombre);
+  const catalog = productsList.filter(p => p.id && p.imagen && p.nombre);
   const displayCount = Math.min(maxDisplay, catalog.length);
 
   let ids = JSON.parse(localStorage.getItem(KEY_IDS) || "[]");
@@ -348,11 +345,11 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem(KEY_TS, Date.now().toString());
   }
 
+  // 3) Inserta los productos reales
   const container = document.getElementById("destacados-grid");
   container.innerHTML = "";
   ids.forEach(id => {
     const p = catalog.find(x => x.id === id);
-    if (!p) return;
     const card = document.createElement("div");
     card.className = "producto producto-card";
     card.innerHTML = `
@@ -368,6 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 </script>
+
 
 
 
