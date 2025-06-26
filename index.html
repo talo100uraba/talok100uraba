@@ -312,8 +312,6 @@
     .addEventListener("click", iniciarSesionAdmin);
 </script>
 <script>
-const BACKEND_URL = "https://taloadmin-backend.onrender.com";
-
 document.addEventListener("DOMContentLoaded", async () => {
   // 1) Trae el catálogo real
   const resp = await fetch(`${BACKEND_URL}/products`);
