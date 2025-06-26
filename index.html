@@ -327,12 +327,12 @@
     return rot.slice(0, 5);
   }
   document.addEventListener("DOMContentLoaded", async () => {
-    const resp = await fetch(BACKEND_URL);
-    const todos = await resp.json();
+    const resp = await fetch(`${BACKEND_URL}/api/products`);
+const all  = await resp.json();
     // categorías que tienes en secciones
     const cats = ["camisas","shorts","gorras","lociones","promociones"];
     // filtra todos los productos de esas categorías
-    const pool = cats.flatMap(c => todos.filter(p => p.categoria === c));
+    const pool = cats.flatMap(c => all.filter(p => p.categoria === c));
     const destacados = pool.length
       ? selectWeekly(pool)
       : [];
