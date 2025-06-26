@@ -456,11 +456,17 @@
         pColores.textContent = "Colores:";
         card.appendChild(pColores);
 
-        const arrayDeColores = Array.isArray(prod.colores)
+       // Dentro de tu función mostrarProductosEnPantalla, reemplaza el bloque de colores por este:
+
+const arrayDeColores = Array.isArray(prod.colores)
   ? prod.colores.map(c => c.trim().toLowerCase())
   : (prod.colores || '').split(',').map(c => c.trim().toLowerCase());
 
 if (arrayDeColores.length > 0 && arrayDeColores[0] !== '') {
+  const label = document.createElement('p');
+  label.textContent = 'Colores:';
+  card.appendChild(label);
+
   const palette = document.createElement('div');
   palette.className = 'color-palette';
 
@@ -475,6 +481,7 @@ if (arrayDeColores.length > 0 && arrayDeColores[0] !== '') {
 
   card.appendChild(palette);
 }
+
 
 
         // Botón “Añadir al carrito”
