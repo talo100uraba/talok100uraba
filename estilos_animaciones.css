@@ -431,24 +431,7 @@ body {
   margin: 0 20px 2rem;
 }
 
-/* Destacados — diseño MÓVIL */
-@media screen and (max-width: 768px) {
-  #productos-destacados .productos-grid {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 0 10px;
-  }
-  #productos-destacados .productos-grid::-webkit-scrollbar {
-    display: none;
-  }
-  #productos-destacados .productos-grid .producto-card {
-    flex: 0 0 auto;
-    width: 200px;
-    margin-right: 0.5rem;
-  }
-}
+
 #productos-destacados h2 {
   text-align: center;
   margin: 2rem 0 1rem;
