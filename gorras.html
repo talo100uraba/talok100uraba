@@ -457,133 +457,26 @@
         pColores.textContent = "Colores:";
         card.appendChild(pColores);
 
-        const palette = document.createElement('div');
-        palette.className = 'color-palette';
+        const arrayDeColores = Array.isArray(prod.colores)
+  ? prod.colores.map(c => c.trim().toLowerCase())
+  : (prod.colores || '').split(',').map(c => c.trim().toLowerCase());
 
-        // Ajuste: prod.colores puede ser array o string
-        let arrayDeColores = [];
-        if (Array.isArray(prod.colores)) {
-          arrayDeColores = prod.colores.map(c => c.trim().toLowerCase());
-        } else if (prod.colores && typeof prod.colores === 'string') {
-          arrayDeColores = prod.colores.split(',').map(c => c.trim().toLowerCase());
-        }
+if (arrayDeColores.length > 0 && arrayDeColores[0] !== '') {
+  const palette = document.createElement('div');
+  palette.className = 'color-palette';
 
-        const diccionarioColores = {
-          // Colores básicos
-          rojo:      "red",
-          verde:     "green",
-          azul:      "blue",
-          negro:     "black",
-          blanco:    "white",
-          amarillo:  "yellow",
-          naranja:   "orange",
-          morado:    "purple",
-          rosado:    "pink",
-          gris:      "gray",
-          marron:    "brown",
-          cian:      "cyan",
-          fucsia:    "magenta",
+  arrayDeColores.forEach(colorNombre => {
+    if (diccionarioColores[colorNombre] || /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorNombre)) {
+      const circle = document.createElement('span');
+      circle.className = 'color-circle';
+      circle.style.backgroundColor = diccionarioColores[colorNombre] || colorNombre;
+      palette.appendChild(circle);
+    }
+  });
 
-          // Tonos intermedios / variantes
-          rojo_claro:       "lightcoral",
-          rojo_oscuro:      "darkred",
-          verde_claro:      "lightgreen",
-          verde_oscuro:     "darkgreen",
-          azul_claro:       "lightblue",
-          azul_oscuro:      "darkblue",
-          gris_claro:       "lightgray",
-          gris_oscuro:      "darkgray",
-          marron_claro:     "peru",
-          marron_oscuro:    "saddlebrown",
-          morado_claro:     "plum",
-          morado_oscuro:    "indigo",
-          rosado_claro:     "lightpink",
-          rosado_oscuro:    "deeppink",
-          amarillo_claro:   "lightyellow",
-          naranja_claro:    "peachpuff",
-          naranja_oscuro:   "darkorange",
-          beige:            "beige",
+  card.appendChild(palette);
+}
 
-          // Colores pastel
-          pastel_rojo:      "#ff9999",
-          pastel_rosa:      "#ffb6c1",
-          pastel_verde:     "#77dd77",
-          pastel_amarillo:  "#fdfd96",
-          pastel_azul:      "#aec6cf",
-          pastel_morado:    "#cdb4db",
-          pastel_turquesa:  "#afeeee",
-
-          // Colores tierra / neutros
-          beige_oscuro:       "#a0522d",
-          caqui:              "khaki",
-          marron_tierra:      "#8b4513",
-          arena:              "#c2b280",
-          crema:              "#fffdd0",
-
-          // Colores “joya”
-          esmeralda:         "#50c878",
-          zafiro:            "#0f52ba",
-          rubi:              "#e0115f",
-          topacio:           "#ffc87c",
-          amatista:          "#9966cc",
-
-          // Colores metalizados
-          dorado:            "gold",
-          plateado:          "silver",
-          bronce:            "#cd7f32",
-
-          // Colores “vinos” / oscuros
-          vino:              "#722f37",
-          granate:           "#800000",
-          berenjena:         "#3b0911",
-          azul_marino:       "navy",
-          oliva:             "olive",
-
-          // Colores aqua / marinos
-          turquesa:          "turquoise",
-          aqua:              "aqua",
-          celeste:           "#b2ffff",
-          teal:              "teal",
-          marino_claro:      "#5f9ea0",
-
-          // Colores especiales
-          coral:             "coral",
-          champagne:         "#f7e7ce",
-          chocolate:         "chocolate",
-          salmon:            "salmon",
-          lavanda:           "lavender",
-          pistacho:          "#93c572",
-          lima:              "lime",
-          lima_claro:        "#ccff00",
-          indigo:            "indigo",
-          magenta_oscuro:    "#8b008b",
-          cyan_oscuro:       "#008b8b",
-          gris_perla:        "#eae0c8"
-        };
-
-        if (arrayDeColores.length > 0) {
-          arrayDeColores.forEach(colorNombre => {
-            const circle = document.createElement('span');
-            circle.className = 'color-circle';
-
-            if (diccionarioColores[colorNombre]) {
-              circle.style.backgroundColor = diccionarioColores[colorNombre];
-            } else if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorNombre)) {
-              circle.style.backgroundColor = colorNombre;
-            } else {
-              circle.style.backgroundColor = "#fff";
-            }
-
-            palette.appendChild(circle);
-          });
-        } else {
-          const circle = document.createElement('span');
-          circle.className = 'color-circle';
-          circle.style.backgroundColor = "#fff";
-          palette.appendChild(circle);
-        }
-
-        card.appendChild(palette);
 
         // Botón “Añadir al carrito”
         const btnCar = document.createElement('button');
