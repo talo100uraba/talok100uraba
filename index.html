@@ -379,6 +379,20 @@
           <button class="btn-carrito">Añadir al carrito</button>
         `;
         container.appendChild(card);
+        // función para guardar en localStorage
+function agregarAlCarrito(id) {
+  const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+  carrito.push(id);
+  localStorage.setItem("carrito", JSON.stringify(carrito));
+}
+
+// tras añadir la card al DOM
+container.appendChild(card);
+card.querySelector(".btn-carrito").addEventListener("click", () => {
+  agregarAlCarrito(p._id);
+  window.location.href = "carrito.html";
+});
+
       });
     });
   });
