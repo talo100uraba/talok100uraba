@@ -347,7 +347,8 @@
       const destacados = selectWeekly(listado);
       destacados.forEach(p => {
         // URL al detalle (ajusta según tu routing)
-        const urlDetalle = `detalle.html?id=${p._id}`;
+        const urlDetalle = `detalle.html?categoria=${p.categoria}&id=${p._id}`;
+
 
         // Precio con o sin descuento
         let priceHTML;
