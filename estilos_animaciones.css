@@ -467,6 +467,9 @@ body {
     margin: 0 !important;
   }
 }
+#destacados-grid .btn-carrito {
+  display: none !important;
+}
 
 
 
